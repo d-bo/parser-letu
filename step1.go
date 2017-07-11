@@ -1,0 +1,136 @@
+package main
+
+import (
+    "io"
+    "log"
+    "fmt"
+    "time"
+    "bytes"
+    "strings"
+    "net/http"
+    "io/ioutil"
+    "gopkg.in/mgo.v2"
+    //"gopkg.in/mgo.v2/bson"
+    "golang.org/x/net/html"
+    )
+
+const LetuRootUrl string = "https://www.letu.ru/"
+const LetuBrandUrl string = "https://www.letu.ru/browse/brandsDisplay.jsp"
+const LetuDB = "import17"
+const LetuCollection = "letu_brands"
+
+var glob_session, glob_err = mgo.Dial("mongodb://localhost:27017/")
+
+// http response body struct
+type Page struct {
+    Body []byte
+}
+
+// Letu brand page: name & link
+type Brand struct {
+    Name string
+    Link string
+}
+
+// Brand pool
+var BrandPool []Brand
+
+// Get url http response
+func loadPage(url string) (*Page) {
+    var httpClient = &http.Client{
+        Timeout: time.Second * 10,
+    }
+    resp, err := httpClient.Get(url)
+    if err != nil && resp.StatusCode == 200 {
+        panic(err)
+    }
+    body, err := ioutil.ReadAll(resp.Body)
+    return &Page{Body: body}
+}
+
+// Render node
+func renderNode(node *html.Node) string {
+    var buf bytes.Buffer
+    w := io.Writer(&buf)
+    err := html.Render(w, node)
+    if err != nil {
+        log.Fatal(err)
+    }
+    return buf.String()
+}
+
+// Get tag context
+// TODO: prevent endless loop
+func extractContext(s string) string {
+    z := html.NewTokenizer(strings.NewReader(s))
+	for {
+		tt := z.Next()
+		switch tt {
+			case html.ErrorToken:
+				fmt.Println(z.Err())
+				continue
+			case html.TextToken:
+				text := string(z.Text())
+				return text
+		}
+	}
+}
+
+// Insert document to mongo brands collection
+func mongoInsertBrand(b *Brand) bool {
+    c := glob_session.DB(LetuDB).C(LetuCollection)
+    glob_session.SetMode(mgo.Monotonic, true)
+    err := c.Insert(b)
+    if err != nil {
+        return true
+    } else {
+        return false
+    }
+}
+
+// Step 1: Get letoile www.letu.ru brands
+func main() {
+    defer glob_session.Close()
+    body := loadPage(LetuBrandUrl)
+    doc, err := html.Parse(strings.NewReader(string(body.Body)))
+
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // html parser itself
+    var f func(*html.Node)
+    f = func(node *html.Node) {
+        match := false
+        var value string
+        if node.Type == html.ElementNode && node.Data == "option" {
+            for _, a := range node.Attr {
+                if a.Key == "value" {
+                    value = a.Val
+                }
+                if a.Key == "class" {
+                    if strings.Contains(a.Val, "chosen-brand") {
+                        match = true
+                    }
+                }
+            }
+            if match {
+                pre := renderNode(node)
+                pre = extractContext(pre)
+                b := Brand{pre, value}
+                BrandPool = append(
+                    BrandPool,
+                    b,
+                )
+                mongoInsertBrand(&b)
+            }
+        }
+
+        // iterate inner nodes recursive
+        for c := node.FirstChild; c != nil; c = c.NextSibling {
+            f(c)
+        }
+    }
+    f(doc)
+    fmt.Println(BrandPool)
+}
