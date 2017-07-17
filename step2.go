@@ -1,5 +1,9 @@
 package main
 
+/**
+ * Step2: Extract product url
+ */
+
 import (
     "io"
     "log"
@@ -8,13 +12,13 @@ import (
     "bytes"
     "strings"
     "net/http"
-    //"io/ioutil"
+    "io/ioutil"
     "gopkg.in/mgo.v2"
     "gopkg.in/mgo.v2/bson"
     "golang.org/x/net/html"
     )
 
-const LetuRootUrl string = "https://www.letu.ru/"
+const LetuRootUrl string = "https://www.letu.ru"
 const LetuBrandUrl string = "https://www.letu.ru/browse/brandsDisplay.jsp"
 const LetuDB = "import17"
 const LetuCollection = "letu_brands"
@@ -44,17 +48,6 @@ var LinkPool []Link
 // Brand pool
 var BrandPool []Brand
 var BrandPoolResult []Brand
-
-// Get url http response
-func loadPage(url string) {
-    var httpClient = &http.Client{
-        Timeout: time.Second * 100,
-    }
-    resp, err := httpClient.Get(url)
-    if err != nil {
-        fmt.Println(err)
-    }
-}
 
 // Render node
 func renderNode(node *html.Node) string {
@@ -96,8 +89,8 @@ func mongoInsertBrand(b *Brand) bool {
     }
 }
 
-// Step 2: Iterate over letoile brand pages
 func main() {
+    start := time.Now()
     defer glob_session.Close()
 
     // html parser itself
@@ -152,32 +145,50 @@ func main() {
         log.Fatal(err)
     }
 
-    fmt.Println(len(results))
+    fmt.Println(results)
 
+    match_flag := 0
     for _, v := range results {
         url_final := LetuRootUrl+ v.Link + "&Nrpp=6000"
-        //body := loadPage(url_final)
+
+        if !strings.Contains(url_final, "q_brandId") {
+            continue
+        } else {
+            if match_flag == 0 {
+                if strings.Contains(v.Link, "/browse/brandProducts.jsp?q_brandId=192001&N=4146502249") {
+                    match_flag = 1
+                } else {
+                    continue
+                }
+            }
+        }
 
         var httpClient = &http.Client{
-            Timeout: time.Second * 10,
+            Timeout: time.Second * 100,
         }
-        resp, err := httpClient.Get(url)
+
+        resp, err := httpClient.Get(url_final)
         if err != nil {
             fmt.Println(err)
         }
-        if body {
-            doc, err := html.Parse(strings.NewReader(string(body.Body)))
-            if err != nil {
-                log.Fatal(err)
-            }
-            fmt.Println(url_final,doc, "\n")
-            f(doc)
+
+        body, err := ioutil.ReadAll(resp.Body)
+        if err != nil {
+            fmt.Println(err)
         }
+
+        doc, err_p := html.Parse(strings.NewReader(string(body)))
+        if err_p != nil {
+            log.Fatal(err)
+        }
+        f(doc)
+        fmt.Println(url_final)
     }
 
     if glob_err != nil {
         log.Fatal(glob_err)
     }
 
-    fmt.Println(BrandPoolResult)
+    elapsed := time.Since(start)
+    fmt.Printf("Script took %s", elapsed)
 }
