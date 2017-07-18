@@ -1,10 +1,11 @@
 package main
 
 /**
- * Step1:
+ * Step1: extract brand urls
  */
 
 import (
+    "os"
     "io"
     "log"
     "fmt"
@@ -14,15 +15,14 @@ import (
     "net/http"
     "io/ioutil"
     "gopkg.in/mgo.v2"
-    //"gopkg.in/mgo.v2/bson"
     "golang.org/x/net/html"
     )
 
 const LetuRootUrl string = "https://www.letu.ru/"
 const LetuBrandUrl string = "https://www.letu.ru/browse/brandsDisplay.jsp"
-const LetuDB = "import17"
 const LetuCollection = "letu_brands"
 
+var LetuDB string = os.Getenv("LETU_MONGO_DB")
 var glob_session, glob_err = mgo.Dial("mongodb://localhost:27017/")
 
 // http response body struct

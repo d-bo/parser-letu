@@ -20,10 +20,10 @@ import (
 
 const LetuRootUrl string = "https://www.letu.ru"
 const LetuBrandUrl string = "https://www.letu.ru/browse/brandsDisplay.jsp"
-const LetuDB = "import17"
 const LetuCollection = "letu_brands"
 const LetuCollectionPages = "letu_pages"
 
+var LetuDB string = os.Getenv("LETU_MONGO_DB")
 var glob_session, glob_err = mgo.Dial("mongodb://localhost:27017/")
 
 // http response body struct
@@ -64,17 +64,17 @@ func renderNode(node *html.Node) string {
 // TODO: prevent endless loop
 func extractContext(s string) string {
     z := html.NewTokenizer(strings.NewReader(s))
-	for {
-		tt := z.Next()
-		switch tt {
-			case html.ErrorToken:
-				fmt.Println(z.Err())
-				continue
-			case html.TextToken:
-				text := string(z.Text())
-				return text
-		}
-	}
+    for {
+        tt := z.Next()
+        switch tt {
+            case html.ErrorToken:
+                fmt.Println(z.Err())
+                continue
+            case html.TextToken:
+                text := string(z.Text())
+                return text
+        }
+    }
 }
 
 // Insert document to mongo brands collection
