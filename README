@@ -1,0 +1,5 @@
+## Install
+
+$ cd parser_letu
+$ export GOPATH=`pwd`
+$ go get golang.org/x/net/html 
