@@ -21,8 +21,8 @@ import (
 
 const LetuRootUrl string = "https://www.letu.ru"
 const LetuBrandUrl string = "https://www.letu.ru/browse/brandsDisplay.jsp"
-const LetuCollection = "letu_brands"
-const LetuCollectionPages = "letu_pages"
+var LetuCollection = "letu_brands"
+var LetuCollectionPages = "letu_pages"
 
 var LetuDB string = os.Getenv("LETU_MONGO_DB")
 var glob_session, glob_err = mgo.Dial("mongodb://localhost:27017/")
@@ -80,7 +80,13 @@ func extractContext(s string) string {
 
 // Insert document to mongo brands collection
 func mongoInsertBrand(b *Brand) bool {
-    c := glob_session.DB(LetuDB).C(LetuCollection)
+    t := time.Now()
+    ti := t.Format("02-01-2006")
+    coll := ti + "_" + LetuCollection
+    if LetuDB == "" {
+        LetuDB = "parser"
+    }
+    c := glob_session.DB(LetuDB).C(coll)
     glob_session.SetMode(mgo.Monotonic, true)
     err := c.Insert(b)
     if err != nil {
@@ -119,7 +125,13 @@ func main() {
                     b,
                 )
 
-                c := glob_session.DB(LetuDB).C(LetuCollectionPages)
+                t := time.Now()
+                ti := t.Format("02-01-2006")
+                coll := ti + "_" + LetuCollectionPages
+                if LetuDB == "" {
+                    LetuDB = "parser"
+                }
+                c := glob_session.DB(LetuDB).C(coll)
                 glob_session.SetMode(mgo.Monotonic, true)
                 err := c.Insert(b)
 

@@ -22,6 +22,7 @@ import (
 const LetuRootUrl string = "https://www.letu.ru"
 const LetuCollectionPages = "letu_pages"
 const LetuProducts = "letu_products"
+const GestoriDB = "gestori_db"
 
 var LetuDB string = os.Getenv("LETU_MONGO_DB")
 
@@ -38,6 +39,15 @@ type Product struct {
     Articul string
     Desc string
     Img string
+    Match_articul string
+}
+
+type Gestori struct {
+    _id string
+    Name_e string
+    Cod_good string
+    Retail_price string
+    Barcod string
 }
 
 // Link pool
@@ -131,6 +141,20 @@ func main() {
                         pre = strings.Replace(pre, "Артикул", "", -1)
                         pre = strings.TrimSpace(pre)
                         pr.Articul = pre
+                        fmt.Println("Articul: ", pre)
+                        
+                        // gestori match
+                        /*
+                        var gestres []Gestori
+                        c := glob_session.DB(LetuDB).C(LetuProducts)
+                        glob_session.SetMode(mgo.Monotonic, true)
+                        err := c.Find(bson.M{"Artic": pre}).One(&gestres)
+                        if err != nil {
+                            panic(err)
+                        } else {
+                            fmt.Println("GESTORI MATCH: ", gestres)
+                        }
+                        */
                     }
                 }
             }
@@ -214,7 +238,13 @@ func main() {
             f5(node, pr)	// desc
 
             if pr.Price != "default" {
-                c := glob_session.DB(LetuDB).C(LetuProducts)
+                t := time.Now()
+                ti := t.Format("02-01-2006")
+                coll := ti + "_" + LetuProducts
+                if LetuDB == "" {
+                    LetuDB = "parser"
+                }
+                c := glob_session.DB(LetuDB).C(coll)
                 glob_session.SetMode(mgo.Monotonic, true)
                 err := c.Insert(pr)
                 if err != nil {
@@ -231,7 +261,13 @@ func main() {
     defer glob_session.Close()
 
     // get target pages from mongo
-    c := glob_session.DB(LetuDB).C(LetuCollectionPages)
+    t := time.Now()
+    ti := t.Format("02-01-2006")
+    coll := ti + "_" + LetuCollectionPages
+    if LetuDB == "" {
+        LetuDB = "parser"
+    }
+    c := glob_session.DB(LetuDB).C(coll)
     glob_session.SetMode(mgo.Monotonic, true)
     err := c.Find(bson.M{}).All(&results)
 

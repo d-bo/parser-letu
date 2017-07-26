@@ -1,11 +1,10 @@
 #!/bin/bash
 
 # mongodb prefix
-PRFX="letu_"
 # go step1-3 will catch this
-export LETU_MONGO_DB=$PRFX`date +%F`
+export ILDE_MONGO_DB="parser"
 
-echo -e "\e[44m"$LETU_MONGO_DB"\e[0m"
+echo -e "\e[44mSTART LETU\e[0m"
 start=`date +%s`
 go run step1.go
 go run step2.go

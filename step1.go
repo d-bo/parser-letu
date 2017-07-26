@@ -82,7 +82,13 @@ func extractContext(s string) string {
 
 // Insert document to mongo brands collection
 func mongoInsertBrand(b *Brand) bool {
-    c := glob_session.DB(LetuDB).C(LetuCollection)
+    t := time.Now()
+    ti := t.Format("02-01-2006")
+    coll := ti + "_" + LetuCollection
+    if LetuDB == "" {
+        LetuDB = "parser"
+    }
+    c := glob_session.DB(LetuDB).C(coll)
     glob_session.SetMode(mgo.Monotonic, true)
     err := c.Insert(b)
     if err != nil {
@@ -92,7 +98,6 @@ func mongoInsertBrand(b *Brand) bool {
     }
 }
 
-// Step 1: Get letoile www.letu.ru brands
 func main() {
     defer glob_session.Close()
     body := loadPage(LetuBrandUrl)
