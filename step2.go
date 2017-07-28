@@ -168,13 +168,17 @@ func main() {
 
     fmt.Println(results)
 
-    match_flag := 0
+    // uncomment this if you want to start from target brand
+    //match_flag := 0
+
     for _, v := range results {
         url_final := LetuRootUrl+ v.Link + "&Nrpp=6000"
 
         if !strings.Contains(url_final, "q_brandId") {
             continue
         } else {
+            // uncomment this if you want to start from target brand
+            /*
             if match_flag == 0 {
                 if strings.Contains(v.Link, "/browse/brandProducts.jsp?q_brandId=192001&N=4146502249") {
                     match_flag = 1
@@ -182,6 +186,7 @@ func main() {
                     continue
                 }
             }
+            */
         }
 
         var httpClient = &http.Client{
