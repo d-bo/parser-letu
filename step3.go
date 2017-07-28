@@ -55,6 +55,13 @@ var LinkPool []Link
 
 var glob_session, glob_err = mgo.Dial("mongodb://localhost:27017/")
 
+func makeTimePrefix(coll string) string {
+    t := time.Now()
+    ti := t.Format("02-01-2006")
+    fin := ti + "_" + coll
+    return fin
+}
+
 // Render node
 func renderNode(node *html.Node) string {
     var buf bytes.Buffer
@@ -238,9 +245,7 @@ func main() {
             f5(node, pr)	// desc
 
             if pr.Price != "default" {
-                t := time.Now()
-                ti := t.Format("02-01-2006")
-                coll := ti + "_" + LetuProducts
+                coll := makeTimePrefix(LetuProducts)
                 if LetuDB == "" {
                     LetuDB = "parser"
                 }
@@ -261,9 +266,7 @@ func main() {
     defer glob_session.Close()
 
     // get target pages from mongo
-    t := time.Now()
-    ti := t.Format("02-01-2006")
-    coll := ti + "_" + LetuCollectionPages
+    coll := makeTimePrefix(LetuCollectionPages)
     if LetuDB == "" {
         LetuDB = "parser"
     }
@@ -281,12 +284,13 @@ func main() {
     for _, v := range results {
         pr = &Product{Price: "default"}
         var httpClient = &http.Client{
-            Timeout: time.Second * 100,
+            Timeout: time.Second * 10,
         }
         url_final := LetuRootUrl + v.Link
         resp, err := httpClient.Get(url_final)
         if err != nil {
             fmt.Println(err)
+            continue
         }
         body, err := ioutil.ReadAll(resp.Body)
         if err != nil {
@@ -294,7 +298,7 @@ func main() {
         }
         doc, err_p := html.Parse(strings.NewReader(string(body)))
         if err_p != nil {
-            log.Fatal(err)
+            log.Println(err)
         }
         fmt.Println(url_final, doc, "\r\n")
         f(doc, pr)

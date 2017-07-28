@@ -80,11 +80,16 @@ func extractContext(s string) string {
 	}
 }
 
-// Insert document to mongo brands collection
-func mongoInsertBrand(b *Brand) bool {
+func makeTimePrefix(coll string) string {
     t := time.Now()
     ti := t.Format("02-01-2006")
-    coll := ti + "_" + LetuCollection
+    fin := ti + "_" + coll
+    return fin
+}
+
+// Insert document to mongo brands collection
+func mongoInsertBrand(b *Brand) bool {
+    coll := makeTimePrefix(LetuCollection)
     if LetuDB == "" {
         LetuDB = "parser"
     }

@@ -50,6 +50,13 @@ var LinkPool []Link
 var BrandPool []Brand
 var BrandPoolResult []Brand
 
+func makeTimePrefix(coll string) string {
+    t := time.Now()
+    ti := t.Format("02-01-2006")
+    fin := ti + "_" + coll
+    return fin
+}
+
 // Render node
 func renderNode(node *html.Node) string {
     var buf bytes.Buffer
@@ -80,9 +87,7 @@ func extractContext(s string) string {
 
 // Insert document to mongo brands collection
 func mongoInsertBrand(b *Brand) bool {
-    t := time.Now()
-    ti := t.Format("02-01-2006")
-    coll := ti + "_" + LetuCollection
+    coll := makeTimePrefix(LetuCollection)
     if LetuDB == "" {
         LetuDB = "parser"
     }
@@ -125,9 +130,7 @@ func main() {
                     b,
                 )
 
-                t := time.Now()
-                ti := t.Format("02-01-2006")
-                coll := ti + "_" + LetuCollectionPages
+                coll := makeTimePrefix(LetuCollectionPages)
                 if LetuDB == "" {
                     LetuDB = "parser"
                 }
@@ -150,7 +153,12 @@ func main() {
     var results []Brand
 
     // get target pages from mongo
-    c := glob_session.DB(LetuDB).C(LetuCollection)
+    if LetuDB == "" {
+        LetuDB = "parser"
+    }
+    coll := makeTimePrefix(LetuCollection)
+    fmt.Println(coll)
+    c := glob_session.DB(LetuDB).C(coll)
     glob_session.SetMode(mgo.Monotonic, true)
     err := c.Find(bson.M{}).All(&results)
 
@@ -177,12 +185,13 @@ func main() {
         }
 
         var httpClient = &http.Client{
-            Timeout: time.Second * 100,
+            Timeout: time.Second * 10,
         }
 
         resp, err := httpClient.Get(url_final)
         if err != nil {
             fmt.Println(err)
+            continue
         }
 
         body, err := ioutil.ReadAll(resp.Body)
@@ -192,8 +201,9 @@ func main() {
 
         doc, err_p := html.Parse(strings.NewReader(string(body)))
         if err_p != nil {
-            log.Fatal(err)
+            log.Println(err)
         }
+
         f(doc)
         fmt.Println(url_final)
     }
