@@ -1,0 +1,3 @@
+## [0.0.1] - 28-07-2017
+### Fixed 
+- Continue script execution after http timeout 
