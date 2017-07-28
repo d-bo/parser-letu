@@ -185,7 +185,7 @@ func main() {
         }
 
         var httpClient = &http.Client{
-            Timeout: time.Second * 10,
+            Timeout: time.Second * 120,
         }
 
         resp, err := httpClient.Get(url_final)

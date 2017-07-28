@@ -206,7 +206,7 @@ func main() {
             f5(c, pr)
         }
     }
-    // extract articul
+    // extract image
     f6 = func(node *html.Node, pr *Product) {
         if node.Type == html.ElementNode && node.Data == "img" {
             for _, a := range node.Attr {
@@ -238,7 +238,6 @@ func main() {
     // found product container
     f1 = func(node *html.Node, pr *Product) {
         if node.Type == html.ElementNode && node.Data == "tr" {
-            fmt.Println("Product node found")
             f2(node, pr)	// price
             f3(node, pr)	// article
             f4(node, pr)	// name
@@ -253,7 +252,7 @@ func main() {
                 glob_session.SetMode(mgo.Monotonic, true)
                 err := c.Insert(pr)
                 if err != nil {
-                    fmt.Println("shit")
+                    fmt.Println(err)
                 }
             }
         }
@@ -278,13 +277,11 @@ func main() {
         log.Fatal(err)
     }
 
-    fmt.Println(len(results))
-
     i = 0
     for _, v := range results {
         pr = &Product{Price: "default"}
         var httpClient = &http.Client{
-            Timeout: time.Second * 10,
+            Timeout: time.Second * 120,
         }
         url_final := LetuRootUrl + v.Link
         resp, err := httpClient.Get(url_final)
@@ -300,7 +297,7 @@ func main() {
         if err_p != nil {
             log.Println(err)
         }
-        fmt.Println(url_final, doc, "\r\n")
+        fmt.Println(url_final, "\r\n")
         f(doc, pr)
         i++
     }
