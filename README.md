@@ -20,4 +20,3 @@ crontab -e
 
 00 11 * * * /bin/bash /home/administrator/parser_letu/start-letu.sh /home/administrator/parser_letu
 ```
-

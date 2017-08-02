@@ -32,6 +32,10 @@ type Page struct {
     Body []byte
 }
 
+type BrandPass struct {
+    Name string
+}
+
 // Letu brand page: name & link
 type Brand struct {
     Name string
@@ -41,6 +45,7 @@ type Brand struct {
 // single link product page
 type Link struct {
     Link string
+    Brand string
 }
 
 // Link pool
@@ -106,8 +111,8 @@ func main() {
     defer glob_session.Close()
 
     // html parser itself
-    var f func(*html.Node)
-    f = func(node *html.Node) {
+    var f func(*html.Node, *BrandPass)
+    f = func(node *html.Node, br *BrandPass) {
         match := false
         var value string
         if node.Type == html.ElementNode && node.Data == "a" {
@@ -124,7 +129,7 @@ func main() {
             if match && !strings.Contains(value, "javascript") {
                 pre := renderNode(node)
                 pre = extractContext(pre)
-                b := Link{value}
+                b := Link{value, br.Name}
                 LinkPool = append(
                     LinkPool,
                     b,
@@ -146,7 +151,7 @@ func main() {
 
         // iterate inner nodes recursive
         for c := node.FirstChild; c != nil; c = c.NextSibling {
-            f(c)
+            f(c, br)
         }
     }
 
@@ -209,7 +214,8 @@ func main() {
             log.Println(err)
         }
 
-        f(doc)
+        br := &BrandPass{Name: v.Name}
+        f(doc, br)
         fmt.Println(url_final)
     }
 

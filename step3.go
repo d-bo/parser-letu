@@ -21,7 +21,8 @@ import (
 
 const LetuRootUrl string = "https://www.letu.ru"
 const LetuCollectionPages = "letu_pages"
-const LetuProducts = "letu_products"
+const LetuProducts = "letu_products_final"
+const LetuPrice = "letu_price"
 const GestoriDB = "gestori_db"
 
 var LetuDB string = os.Getenv("LETU_MONGO_DB")
@@ -29,6 +30,11 @@ var LetuDB string = os.Getenv("LETU_MONGO_DB")
 // single link product page
 type Link struct {
     Link string
+    Brand string
+}
+
+type Brand struct {
+    Name string
 }
 
 // Product
@@ -40,6 +46,25 @@ type Product struct {
     Desc string
     Img string
     Match_articul string
+    Brand string
+}
+
+// ProductFinal
+type ProductFinal struct {
+    Name string
+    Articul string
+    Desc string
+    Img string
+    Match_articul string
+    Brand string
+}
+
+// struct for ILDE_price
+type ProductPrice struct {
+    Price string
+    Price_discount string
+    Articul string
+    Brand string
 }
 
 type Gestori struct {
@@ -54,6 +79,13 @@ type Gestori struct {
 var LinkPool []Link
 
 var glob_session, glob_err = mgo.Dial("mongodb://localhost:27017/")
+
+func makeTimeMonthlyPrefix(coll string) string {
+    t := time.Now()
+    ti := t.Format("01-2006")
+    fin := ti + "_" + coll
+    return fin
+}
 
 func makeTimePrefix(coll string) string {
     t := time.Now()
@@ -95,8 +127,8 @@ func main() {
     var i int
     var pr *Product
     var results []Link
-    var f func(*html.Node, *Product)
-    var f1 func(*html.Node, *Product)
+    var f func(*html.Node, *Product, *Brand)
+    var f1 func(*html.Node, *Product, *Brand)
     var f2 func(*html.Node, *Product)
     var f3 func(*html.Node, *Product)
     var f4 func(*html.Node, *Product)
@@ -105,19 +137,19 @@ func main() {
 
 
 
-    f = func(node *html.Node, pr *Product) {
+    f = func(node *html.Node, pr *Product, br *Brand) {
         if node.Type == html.ElementNode && node.Data == "table" {
             for _, a := range node.Attr {
                 if a.Key == "class" {
                     if strings.Contains(a.Val, "atg_store_productSummary") {
-                        f1(node, pr)
+                        f1(node, pr, br)
                     }
                 }
             }
         }
         // iterate inner nodes recursive
         for c := node.FirstChild; c != nil; c = c.NextSibling {
-            f(c, pr)
+            f(c, pr, br)
         }
     }
     // extract price
@@ -236,7 +268,7 @@ func main() {
         }
     }
     // found product container
-    f1 = func(node *html.Node, pr *Product) {
+    f1 = func(node *html.Node, pr *Product, br *Brand) {
         if node.Type == html.ElementNode && node.Data == "tr" {
             f2(node, pr)	// price
             f3(node, pr)	// article
@@ -244,20 +276,60 @@ func main() {
             f5(node, pr)	// desc
 
             if pr.Price != "default" {
-                coll := makeTimePrefix(LetuProducts)
                 if LetuDB == "" {
                     LetuDB = "parser"
                 }
-                c := glob_session.DB(LetuDB).C(coll)
+                c := glob_session.DB(LetuDB).C(LetuProducts)
+                d := glob_session.DB(LetuDB).C(makeTimeMonthlyPrefix(LetuPrice))
                 glob_session.SetMode(mgo.Monotonic, true)
-                err := c.Insert(pr)
+
+                // check double
+                num, err := c.Find(bson.M{"articul": pr.Articul}).Count()
                 if err != nil {
-                    fmt.Println(err)
+                    panic(err)
+                }
+
+                if num < 1 {
+
+                    /*
+                    Name string
+                    Articul string
+                    Desc string
+                    Img string
+                    Match_articul string
+                    */
+
+                    new := ProductFinal{
+                        Articul: pr.Articul,
+                        Name: pr.Name,
+                        Desc: pr.Desc,
+                        Img: pr.Img,
+                        Match_articul: pr.Match_articul,
+                        Brand: br.Name,
+                    }
+                    price := ProductPrice{
+                        Price: pr.Price,
+                        Price_discount: pr.Price_discount,
+                        Articul: pr.Articul,
+                        Brand: br.Name,
+                    }
+                    // insert 'letu_products_final'
+                    err := c.Insert(new)
+                    if err != nil {
+                        fmt.Println(err)
+                    }
+                    // insert 'letu_price'
+                    err = d.Insert(price)
+                    if err != nil {
+                        fmt.Println(err)
+                    }
+                } else {
+                    fmt.Println("Double articul")
                 }
             }
         }
         for c := node.FirstChild; c != nil; c = c.NextSibling {
-            f1(c, pr)
+            f1(c, pr, br)
         }
     }
 
@@ -298,7 +370,8 @@ func main() {
             log.Println(err)
         }
         fmt.Println(url_final, "\r\n")
-        f(doc, pr)
+        br := &Brand{Name: v.Brand}
+        f(doc, pr, br)
         i++
     }
 
