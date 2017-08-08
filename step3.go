@@ -23,9 +23,16 @@ const LetuRootUrl string = "https://www.letu.ru"
 const LetuCollectionPages = "letu_pages"
 const LetuProducts = "letu_products_final"
 const LetuPrice = "letu_price"
-const GestoriDB = "gestori_db"
+const GestoriDB = "gestori"
+const LogFile = "Log"
 
 var LetuDB string = os.Getenv("LETU_MONGO_DB")
+
+type Counter struct {
+    count_double int
+    count_new int
+    count_gestori_match int
+}
 
 // single link product page
 type Link struct {
@@ -45,7 +52,7 @@ type Product struct {
     Articul string
     Desc string
     Img string
-    Match_articul string
+    Gestori string
     Brand string
 }
 
@@ -55,7 +62,7 @@ type ProductFinal struct {
     Articul string
     Desc string
     Img string
-    Match_articul string
+    Gestori string
     Brand string
 }
 
@@ -79,6 +86,19 @@ type Gestori struct {
 var LinkPool []Link
 
 var glob_session, glob_err = mgo.Dial("mongodb://localhost:27017/")
+
+func Log(msg []byte) {
+    f, err := os.OpenFile("log/"+makeTimePrefix(LogFile), os.O_RDWR|os.O_APPEND|os.O_CREATE, 0775)
+    defer f.Close()
+    if err != nil {
+        fmt.Println(err)
+    }
+    bytemsg := []byte(msg)
+    n, err := f.Write(bytemsg)
+    if err == nil && n < len(bytemsg) {
+        fmt.Println(io.ErrShortWrite)
+    }
+}
 
 func makeTimeMonthlyPrefix(coll string) string {
     t := time.Now()
@@ -183,17 +203,18 @@ func main() {
                         fmt.Println("Articul: ", pre)
                         
                         // gestori match
-                        /*
-                        var gestres []Gestori
+                        var gestres Gestori
                         c := glob_session.DB(LetuDB).C(LetuProducts)
                         glob_session.SetMode(mgo.Monotonic, true)
                         err := c.Find(bson.M{"Artic": pre}).One(&gestres)
                         if err != nil {
-                            panic(err)
+                            fmt.Println("GESTORI NOT FOUND")
                         } else {
                             fmt.Println("GESTORI MATCH: ", gestres)
+                            pr.Gestori = gestres.Cod_good
+                            logstring := []byte("Gestori match: "+pre+pr.Gestori+"\n")
+                            Log(logstring)
                         }
-                        */
                     }
                 }
             }
@@ -304,7 +325,7 @@ func main() {
                         Name: pr.Name,
                         Desc: pr.Desc,
                         Img: pr.Img,
-                        Match_articul: pr.Match_articul,
+                        Gestori: pr.Gestori,
                         Brand: br.Name,
                     }
                     price := ProductPrice{
