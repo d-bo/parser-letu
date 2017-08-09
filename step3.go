@@ -25,8 +25,16 @@ const LetuProducts = "letu_products_final"
 const LetuPrice = "letu_price"
 const GestoriDB = "gestori"
 const LogFile = "Log"
+const LogCollection = "Log"
 
 var LetuDB string = os.Getenv("LETU_MONGO_DB")
+
+type LogStruct struct {
+    Subject string
+    Action string
+    Val string
+    Date string
+}
 
 type Counter struct {
     count_double int
@@ -52,7 +60,7 @@ type Product struct {
     Articul string
     Desc string
     Img string
-    Gestori string
+    Gestori string `json:"gestori,omitempty" bson:"gestori,omitempty"`
     Brand string
 }
 
@@ -62,7 +70,7 @@ type ProductFinal struct {
     Articul string
     Desc string
     Img string
-    Gestori string
+    Gestori string `json:"gestori,omitempty" bson:"gestori,omitempty"`
     Brand string
 }
 
@@ -110,6 +118,9 @@ func makeTimeMonthlyPrefix(coll string) string {
 func makeTimePrefix(coll string) string {
     t := time.Now()
     ti := t.Format("02-01-2006")
+    if coll == "" {
+        return ti
+    }
     fin := ti + "_" + coll
     return fin
 }
@@ -288,6 +299,7 @@ func main() {
             f6(c, pr)
         }
     }
+    
     // found product container
     f1 = func(node *html.Node, pr *Product, br *Brand) {
         if node.Type == html.ElementNode && node.Data == "tr" {
@@ -300,14 +312,16 @@ func main() {
                 if LetuDB == "" {
                     LetuDB = "parser"
                 }
+
                 c := glob_session.DB(LetuDB).C(LetuProducts)
                 d := glob_session.DB(LetuDB).C(makeTimeMonthlyPrefix(LetuPrice))
+                e := glob_session.DB(LetuDB).C(makeTimePrefix(LogCollection))
                 glob_session.SetMode(mgo.Monotonic, true)
 
                 // check double
                 num, err := c.Find(bson.M{"articul": pr.Articul}).Count()
                 if err != nil {
-                    panic(err)
+                    fmt.Println(err)
                 }
 
                 if num < 1 {
@@ -344,6 +358,12 @@ func main() {
                     if err != nil {
                         fmt.Println(err)
                     }
+                    e.Insert(LogStruct{
+                        Subject: "letu",
+                        Action: "new_articul",
+                        Val: pr.Articul,
+                        Date: makeTimePrefix(""),
+                    })
                 } else {
                     fmt.Println("Double articul")
                 }
