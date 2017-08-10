@@ -1,4 +1,4 @@
-package main
+package goldapple
 
 /**
  * Step3: collect product data
@@ -10,7 +10,6 @@ import (
     "log"
     "fmt"
     "time"
-    "bytes"
     "strings"
     "net/http"
     "io/ioutil"
@@ -19,15 +18,13 @@ import (
     "golang.org/x/net/html"
     )
 
-const LetuRootUrl string = "https://www.letu.ru"
-const LetuCollectionPages = "letu_pages"
 const LetuProducts = "letu_products_final"
 const LetuPrice = "letu_price"
 const GestoriDB = "gestori"
 const LogFile = "Log"
 const LogCollection = "Log"
 
-var LetuDB string = os.Getenv("LETU_MONGO_DB")
+var glob_session_step3, glob_err_step3 = mgo.Dial("mongodb://localhost:27017/")
 
 type LogStruct struct {
     Subject string
@@ -42,13 +39,7 @@ type Counter struct {
     count_gestori_match int
 }
 
-// single link product page
-type Link struct {
-    Link string
-    Brand string
-}
-
-type Brand struct {
+type BrandSingle struct {
     Name string
 }
 
@@ -90,11 +81,6 @@ type Gestori struct {
     Barcod string
 }
 
-// Link pool
-var LinkPool []Link
-
-var glob_session, glob_err = mgo.Dial("mongodb://localhost:27017/")
-
 func Log(msg []byte) {
     f, err := os.OpenFile("log/"+makeTimePrefix(LogFile), os.O_RDWR|os.O_APPEND|os.O_CREATE, 0775)
     defer f.Close()
@@ -115,51 +101,13 @@ func makeTimeMonthlyPrefix(coll string) string {
     return fin
 }
 
-func makeTimePrefix(coll string) string {
-    t := time.Now()
-    ti := t.Format("02-01-2006")
-    if coll == "" {
-        return ti
-    }
-    fin := ti + "_" + coll
-    return fin
-}
-
-// Render node
-func renderNode(node *html.Node) string {
-    var buf bytes.Buffer
-    w := io.Writer(&buf)
-    err := html.Render(w, node)
-    if err != nil {
-        log.Fatal(err)
-    }
-    return buf.String()
-}
-
-// Get tag context
-// TODO: prevent endless loop
-func extractContext(s string) string {
-    z := html.NewTokenizer(strings.NewReader(s))
-    for {
-        tt := z.Next()
-        switch tt {
-            case html.ErrorToken:
-                fmt.Println(z.Err())
-                continue
-            case html.TextToken:
-                text := string(z.Text())
-                return text
-        }
-    }
-}
-
-func main() {
+func Step3() {
 
     var i int
     var pr *Product
     var results []Link
-    var f func(*html.Node, *Product, *Brand)
-    var f1 func(*html.Node, *Product, *Brand)
+    var f func(*html.Node, *Product, *BrandSingle)
+    var f1 func(*html.Node, *Product, *BrandSingle)
     var f2 func(*html.Node, *Product)
     var f3 func(*html.Node, *Product)
     var f4 func(*html.Node, *Product)
@@ -168,7 +116,7 @@ func main() {
 
 
 
-    f = func(node *html.Node, pr *Product, br *Brand) {
+    f = func(node *html.Node, pr *Product, br *BrandSingle) {
         if node.Type == html.ElementNode && node.Data == "table" {
             for _, a := range node.Attr {
                 if a.Key == "class" {
@@ -215,8 +163,8 @@ func main() {
                         
                         // gestori match
                         var gestres Gestori
-                        c := glob_session.DB(LetuDB).C(LetuProducts)
-                        glob_session.SetMode(mgo.Monotonic, true)
+                        c := glob_session_step3.DB(LetuDB).C(LetuProducts)
+                        glob_session_step3.SetMode(mgo.Monotonic, true)
                         err := c.Find(bson.M{"Artic": pre}).One(&gestres)
                         if err != nil {
                             fmt.Println("GESTORI NOT FOUND")
@@ -301,7 +249,7 @@ func main() {
     }
     
     // found product container
-    f1 = func(node *html.Node, pr *Product, br *Brand) {
+    f1 = func(node *html.Node, pr *Product, br *BrandSingle) {
         if node.Type == html.ElementNode && node.Data == "tr" {
             f2(node, pr)	// price
             f3(node, pr)	// article
@@ -313,10 +261,10 @@ func main() {
                     LetuDB = "parser"
                 }
 
-                c := glob_session.DB(LetuDB).C(LetuProducts)
-                d := glob_session.DB(LetuDB).C(makeTimeMonthlyPrefix(LetuPrice))
-                e := glob_session.DB(LetuDB).C(makeTimePrefix(LogCollection))
-                glob_session.SetMode(mgo.Monotonic, true)
+                c := glob_session_step3.DB(LetuDB).C(LetuProducts)
+                d := glob_session_step3.DB(LetuDB).C(makeTimeMonthlyPrefix(LetuPrice))
+                e := glob_session_step3.DB(LetuDB).C(makeTimePrefix(LogCollection))
+                glob_session_step3.SetMode(mgo.Monotonic, true)
 
                 // check double
                 num, err := c.Find(bson.M{"articul": pr.Articul}).Count()
@@ -375,18 +323,18 @@ func main() {
     }
 
     start := time.Now()
-    defer glob_session.Close()
+    defer glob_session_step3.Close()
 
     // get target pages from mongo
     coll := makeTimePrefix(LetuCollectionPages)
     if LetuDB == "" {
         LetuDB = "parser"
     }
-    c := glob_session.DB(LetuDB).C(coll)
-    glob_session.SetMode(mgo.Monotonic, true)
+    c := glob_session_step3.DB(LetuDB).C(coll)
+    glob_session_step3.SetMode(mgo.Monotonic, true)
     err := c.Find(bson.M{}).All(&results)
 
-    if glob_err != nil {
+    if glob_err_step3 != nil {
         log.Fatal(err)
     }
 
@@ -411,13 +359,13 @@ func main() {
             log.Println(err)
         }
         fmt.Println(url_final, "\r\n")
-        br := &Brand{Name: v.Brand}
+        br := &BrandSingle{Name: v.Brand}
         f(doc, pr, br)
         i++
     }
 
-    if glob_err != nil {
-        log.Fatal(glob_err)
+    if glob_err_step3 != nil {
+        log.Fatal(glob_err_step3)
     }
 
     elapsed := time.Since(start)

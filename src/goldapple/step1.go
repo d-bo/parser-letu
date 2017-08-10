@@ -1,4 +1,4 @@
-package main
+package goldapple
 
 /**
  * Step1: extract brand urls
@@ -23,7 +23,7 @@ const LetuBrandUrl string = "https://www.letu.ru/browse/brandsDisplay.jsp"
 const LetuCollection = "letu_brands"
 
 var LetuDB string = os.Getenv("LETU_MONGO_DB")
-var glob_session, glob_err = mgo.Dial("mongodb://localhost:27017/")
+var glob_session_step1, glob_err_step1 = mgo.Dial("mongodb://localhost:27017/")
 
 // http response body struct
 type Page struct {
@@ -83,6 +83,9 @@ func extractContext(s string) string {
 func makeTimePrefix(coll string) string {
     t := time.Now()
     ti := t.Format("02-01-2006")
+    if coll == "" {
+        return ti
+    }
     fin := ti + "_" + coll
     return fin
 }
@@ -93,8 +96,8 @@ func mongoInsertBrand(b *Brand) bool {
     if LetuDB == "" {
         LetuDB = "parser"
     }
-    c := glob_session.DB(LetuDB).C(coll)
-    glob_session.SetMode(mgo.Monotonic, true)
+    c := glob_session_step1.DB(LetuDB).C(coll)
+    glob_session_step1.SetMode(mgo.Monotonic, true)
     err := c.Insert(b)
     if err != nil {
         return true
@@ -103,8 +106,8 @@ func mongoInsertBrand(b *Brand) bool {
     }
 }
 
-func main() {
-    defer glob_session.Close()
+func Step1() {
+    defer glob_session_step1.Close()
     body := loadPage(LetuBrandUrl)
     doc, err := html.Parse(strings.NewReader(string(body.Body)))
 

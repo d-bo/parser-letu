@@ -1,4 +1,5 @@
 *.o
-src/
+src/*
+!src/goldapple
 pkg/
 bin/

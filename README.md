@@ -3,9 +3,12 @@
 ```bash
 cd parser_letu
 export GOPATH=`pwd`
-go get golang.org/x/net/html 
+go get golang.org/x/net/html
 go get gopkg.in/mgo.v2
-time ./start-letu.sh
+# goldapple pkg
+go build goldapple
+go install goldapple
+go run tcp-server.go
 ```
 
 ## Cron
@@ -16,7 +19,6 @@ crontab -e
 
 ```bash
 # everyday at 11:00
-# 00 11 * * * source <PROJECT_PATH>/start-letu.sh <PROJECT_PATH>
 
-00 11 * * * /bin/bash /home/administrator/parser_letu/start-letu.sh /home/administrator/parser_letu
+00 11 * * * echo -n "start"|netcat 127.0.0.1 8800
 ```

@@ -1,16 +1,13 @@
-package main
+package goldapple
 
 /**
  * Step2: Extract product url
  */
 
 import (
-    "os"
-    "io"
     "log"
     "fmt"
     "time"
-    "bytes"
     "strings"
     "net/http"
     "io/ioutil"
@@ -19,27 +16,11 @@ import (
     "golang.org/x/net/html"
     )
 
-const LetuRootUrl string = "https://www.letu.ru"
-const LetuBrandUrl string = "https://www.letu.ru/browse/brandsDisplay.jsp"
-var LetuCollection = "letu_brands"
 var LetuCollectionPages = "letu_pages"
-
-var LetuDB string = os.Getenv("LETU_MONGO_DB")
-var glob_session, glob_err = mgo.Dial("mongodb://localhost:27017/")
-
-// http response body struct
-type Page struct {
-    Body []byte
-}
+var glob_session_step2, glob_err_step2 = mgo.Dial("mongodb://localhost:27017/")
 
 type BrandPass struct {
     Name string
-}
-
-// Letu brand page: name & link
-type Brand struct {
-    Name string
-    Link string
 }
 
 // single link product page
@@ -52,63 +33,11 @@ type Link struct {
 var LinkPool []Link
 
 // Brand pool
-var BrandPool []Brand
 var BrandPoolResult []Brand
 
-func makeTimePrefix(coll string) string {
-    t := time.Now()
-    ti := t.Format("02-01-2006")
-    fin := ti + "_" + coll
-    return fin
-}
-
-// Render node
-func renderNode(node *html.Node) string {
-    var buf bytes.Buffer
-    w := io.Writer(&buf)
-    err := html.Render(w, node)
-    if err != nil {
-        log.Fatal(err)
-    }
-    return buf.String()
-}
-
-// Get tag context
-// TODO: prevent endless loop
-func extractContext(s string) string {
-    z := html.NewTokenizer(strings.NewReader(s))
-    for {
-        tt := z.Next()
-        switch tt {
-            case html.ErrorToken:
-                fmt.Println(z.Err())
-                continue
-            case html.TextToken:
-                text := string(z.Text())
-                return text
-        }
-    }
-}
-
-// Insert document to mongo brands collection
-func mongoInsertBrand(b *Brand) bool {
-    coll := makeTimePrefix(LetuCollection)
-    if LetuDB == "" {
-        LetuDB = "parser"
-    }
-    c := glob_session.DB(LetuDB).C(coll)
-    glob_session.SetMode(mgo.Monotonic, true)
-    err := c.Insert(b)
-    if err != nil {
-        return true
-    } else {
-        return false
-    }
-}
-
-func main() {
+func Step2() {
     start := time.Now()
-    defer glob_session.Close()
+    defer glob_session_step2.Close()
 
     // html parser itself
     var f func(*html.Node, *BrandPass)
@@ -139,8 +68,8 @@ func main() {
                 if LetuDB == "" {
                     LetuDB = "parser"
                 }
-                c := glob_session.DB(LetuDB).C(coll)
-                glob_session.SetMode(mgo.Monotonic, true)
+                c := glob_session_step2.DB(LetuDB).C(coll)
+                glob_session_step2.SetMode(mgo.Monotonic, true)
                 err := c.Insert(b)
 
                 if err != nil {
@@ -163,11 +92,11 @@ func main() {
     }
     coll := makeTimePrefix(LetuCollection)
     fmt.Println(coll)
-    c := glob_session.DB(LetuDB).C(coll)
-    glob_session.SetMode(mgo.Monotonic, true)
+    c := glob_session_step2.DB(LetuDB).C(coll)
+    glob_session_step2.SetMode(mgo.Monotonic, true)
     err := c.Find(bson.M{}).All(&results)
 
-    if glob_err != nil {
+    if glob_err_step2 != nil {
         log.Fatal(err)
     }
 
@@ -219,8 +148,8 @@ func main() {
         fmt.Println(url_final)
     }
 
-    if glob_err != nil {
-        log.Fatal(glob_err)
+    if glob_err_step2 != nil {
+        log.Fatal(glob_err_step2)
     }
 
     elapsed := time.Since(start)
