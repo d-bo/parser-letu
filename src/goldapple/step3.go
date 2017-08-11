@@ -263,7 +263,7 @@ func Step3() {
 
                 c := glob_session_step3.DB(LetuDB).C(LetuProducts)
                 d := glob_session_step3.DB(LetuDB).C(makeTimeMonthlyPrefix(LetuPrice))
-                e := glob_session_step3.DB(LetuDB).C(makeTimePrefix(LogCollection))
+                e := glob_session_step3.DB(LetuDB).C(LogCollection)
                 glob_session_step3.SetMode(mgo.Monotonic, true)
 
                 // check double
