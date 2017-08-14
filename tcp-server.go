@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	C_HOST = "127.0.0.1"
+	C_HOST = "0.0.0.0"
 	C_PORT = "8800"
 	C_TYPE = "tcp"
 )
