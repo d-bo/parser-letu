@@ -313,6 +313,11 @@ func Step3() {
                         Date: makeTimePrefix(""),
                     })
                 } else {
+                    // insert 'letu_price' on double
+                    err = d.Insert(price)
+                    if err != nil {
+                        fmt.Println(err)
+                    }
                     fmt.Println("Double articul")
                 }
             }
