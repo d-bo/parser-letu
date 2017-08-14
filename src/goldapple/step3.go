@@ -272,6 +272,13 @@ func Step3() {
                     fmt.Println(err)
                 }
 
+                price := ProductPrice{
+                    Price: pr.Price,
+                    Price_discount: pr.Price_discount,
+                    Articul: pr.Articul,
+                    Brand: br.Name,
+                }
+
                 if num < 1 {
 
                     /*
@@ -288,12 +295,6 @@ func Step3() {
                         Desc: pr.Desc,
                         Img: pr.Img,
                         Gestori: pr.Gestori,
-                        Brand: br.Name,
-                    }
-                    price := ProductPrice{
-                        Price: pr.Price,
-                        Price_discount: pr.Price_discount,
-                        Articul: pr.Articul,
                         Brand: br.Name,
                     }
                     // insert 'letu_products_final'
