@@ -24,8 +24,6 @@ const GestoriDB = "gestori"
 const LogFile = "Log"
 const LogCollection = "Log"
 
-var glob_session_step3, glob_err_step3 = mgo.Dial("mongodb://localhost:27017/")
-
 type LogStruct struct {
     Subject string
     Action string
@@ -101,7 +99,7 @@ func makeTimeMonthlyPrefix(coll string) string {
     return fin
 }
 
-func Step3() {
+func Step3(glob_session *mgo.Session) {
 
     var i int
     var pr *Product
@@ -163,8 +161,8 @@ func Step3() {
                         
                         // gestori match
                         var gestres Gestori
-                        c := glob_session_step3.DB(LetuDB).C(LetuProducts)
-                        glob_session_step3.SetMode(mgo.Monotonic, true)
+                        c := glob_session.DB(LetuDB).C(LetuProducts)
+                        glob_session.SetMode(mgo.Monotonic, true)
                         err := c.Find(bson.M{"Artic": pre}).One(&gestres)
                         if err != nil {
                             fmt.Println("GESTORI NOT FOUND")
@@ -261,10 +259,10 @@ func Step3() {
                     LetuDB = "parser"
                 }
 
-                c := glob_session_step3.DB(LetuDB).C(LetuProducts)
-                d := glob_session_step3.DB(LetuDB).C(makeTimeMonthlyPrefix(LetuPrice))
-                e := glob_session_step3.DB(LetuDB).C(LogCollection)
-                glob_session_step3.SetMode(mgo.Monotonic, true)
+                c := glob_session.DB(LetuDB).C(LetuProducts)
+                d := glob_session.DB(LetuDB).C(makeTimeMonthlyPrefix(LetuPrice))
+                e := glob_session.DB(LetuDB).C(LogCollection)
+                glob_session.SetMode(mgo.Monotonic, true)
 
                 // check double
                 num, err := c.Find(bson.M{"articul": pr.Articul}).Count()
@@ -329,19 +327,18 @@ func Step3() {
     }
 
     start := time.Now()
-    defer glob_session_step3.Close()
 
     // get target pages from mongo
     coll := makeTimePrefix(LetuCollectionPages)
     if LetuDB == "" {
         LetuDB = "parser"
     }
-    c := glob_session_step3.DB(LetuDB).C(coll)
-    glob_session_step3.SetMode(mgo.Monotonic, true)
+    c := glob_session.DB(LetuDB).C(coll)
+    glob_session.SetMode(mgo.Monotonic, true)
     err := c.Find(bson.M{}).All(&results)
 
-    if glob_err_step3 != nil {
-        log.Fatal(err)
+    if err != nil {
+        fmt.Println(err)
     }
 
     i = 0
@@ -368,10 +365,6 @@ func Step3() {
         br := &BrandSingle{Name: v.Brand}
         f(doc, pr, br)
         i++
-    }
-
-    if glob_err_step3 != nil {
-        log.Fatal(glob_err_step3)
     }
 
     elapsed := time.Since(start)

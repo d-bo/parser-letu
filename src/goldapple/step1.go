@@ -23,7 +23,6 @@ const LetuBrandUrl string = "https://www.letu.ru/browse/brandsDisplay.jsp"
 const LetuCollection = "letu_brands"
 
 var LetuDB string = os.Getenv("LETU_MONGO_DB")
-var glob_session_step1, glob_err_step1 = mgo.Dial("mongodb://localhost:27017/")
 
 // http response body struct
 type Page struct {
@@ -91,13 +90,13 @@ func makeTimePrefix(coll string) string {
 }
 
 // Insert document to mongo brands collection
-func mongoInsertBrand(b *Brand) bool {
+func mongoInsertBrand(b *Brand, glob_session *mgo.Session) bool {
     coll := makeTimePrefix(LetuCollection)
     if LetuDB == "" {
         LetuDB = "parser"
     }
-    c := glob_session_step1.DB(LetuDB).C(coll)
-    glob_session_step1.SetMode(mgo.Monotonic, true)
+    c := glob_session.DB(LetuDB).C(coll)
+    glob_session.SetMode(mgo.Monotonic, true)
     err := c.Insert(b)
     if err != nil {
         return true
@@ -106,8 +105,7 @@ func mongoInsertBrand(b *Brand) bool {
     }
 }
 
-func Step1() {
-    defer glob_session_step1.Close()
+func Step1(glob_session *mgo.Session) {
     body := loadPage(LetuBrandUrl)
     doc, err := html.Parse(strings.NewReader(string(body.Body)))
 
@@ -139,7 +137,7 @@ func Step1() {
                     BrandPool,
                     b,
                 )
-                mongoInsertBrand(&b)
+                mongoInsertBrand(&b, glob_session)
             }
         }
 

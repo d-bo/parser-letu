@@ -17,7 +17,6 @@ import (
     )
 
 var LetuCollectionPages = "letu_pages"
-var glob_session_step2, glob_err_step2 = mgo.Dial("mongodb://localhost:27017/")
 
 type BrandPass struct {
     Name string
@@ -35,9 +34,8 @@ var LinkPool []Link
 // Brand pool
 var BrandPoolResult []Brand
 
-func Step2() {
+func Step2(glob_session *mgo.Session) {
     start := time.Now()
-    defer glob_session_step2.Close()
 
     // html parser itself
     var f func(*html.Node, *BrandPass)
@@ -68,8 +66,8 @@ func Step2() {
                 if LetuDB == "" {
                     LetuDB = "parser"
                 }
-                c := glob_session_step2.DB(LetuDB).C(coll)
-                glob_session_step2.SetMode(mgo.Monotonic, true)
+                c := glob_session.DB(LetuDB).C(coll)
+                glob_session.SetMode(mgo.Monotonic, true)
                 err := c.Insert(b)
 
                 if err != nil {
@@ -92,12 +90,12 @@ func Step2() {
     }
     coll := makeTimePrefix(LetuCollection)
     fmt.Println(coll)
-    c := glob_session_step2.DB(LetuDB).C(coll)
-    glob_session_step2.SetMode(mgo.Monotonic, true)
+    c := glob_session.DB(LetuDB).C(coll)
+    glob_session.SetMode(mgo.Monotonic, true)
     err := c.Find(bson.M{}).All(&results)
 
-    if glob_err_step2 != nil {
-        log.Fatal(err)
+    if err != nil {
+        fmt.Println(err)
     }
 
     fmt.Println(results)
@@ -146,10 +144,6 @@ func Step2() {
         br := &BrandPass{Name: v.Name}
         f(doc, br)
         fmt.Println(url_final)
-    }
-
-    if glob_err_step2 != nil {
-        log.Fatal(glob_err_step2)
     }
 
     elapsed := time.Since(start)
