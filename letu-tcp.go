@@ -6,7 +6,8 @@ package main
 import (
 	"os"
     "net"
-    "fmt"
+	"fmt"
+    "time"
 	"syscall"
 	"os/signal"
 	"goldapple"
@@ -18,6 +19,21 @@ const (
 	C_PORT = "8800"
 	C_TYPE = "tcp"
 )
+
+const LetuBrandCollection = "letu_brands"
+
+var LetuDB string = os.Getenv("LETU_MONGO_DB")
+
+// A time prefix before collection name
+func makeTimePrefix(coll string) string {
+    t := time.Now()
+    ti := t.Format("02-01-2006")
+    if coll == "" {
+        return ti
+    }
+    fin := ti + "_" + coll
+    return fin
+}
 
 func main() {
 	glob_session, glob_err := mgo.Dial("mongodb://localhost:27017/")
@@ -77,6 +93,23 @@ func handleRequest(conn net.Conn, session *mgo.Session) {
 		fmt.Println("Error reading: ", err.Error())
 	}
 	str := string(buf[:len])
+
+	coll := makeTimePrefix(LetuBrandCollection)
+	if LetuDB == "" {
+		LetuDB = "parser"
+	}
+	c := session.DB(LetuDB).C(coll)
+	session.SetMode(mgo.Monotonic, true)
+	num, err := c.Count()
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	if num > 1 {
+		fmt.Println("Allready started")
+		os.Exit(0)
+	}
 
 	switch str {
 		case "start":
