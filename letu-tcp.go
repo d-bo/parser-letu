@@ -106,13 +106,12 @@ func handleRequest(conn net.Conn, session *mgo.Session) {
 		fmt.Println(err)
 	}
 
-	if num > 1 {
-		fmt.Println("Allready started")
-		os.Exit(0)
-	}
-
 	switch str {
 		case "start":
+			if num > 1 {
+				fmt.Println("Allready started")
+				os.Exit(0)
+			}
 			fmt.Println("Start LETU parser ...\n")
 			goldapple.Step1(session)
 			goldapple.Step2(session)

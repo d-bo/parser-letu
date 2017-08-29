@@ -71,7 +71,7 @@ func Step2(glob_session *mgo.Session) {
                 err := c.Insert(b)
 
                 if err != nil {
-                    fmt.Println(err)
+                    fmt.Println("step2: ", err)
                 }
             }
         }
@@ -89,16 +89,16 @@ func Step2(glob_session *mgo.Session) {
         LetuDB = "parser"
     }
     coll := makeTimePrefix(LetuCollection)
-    fmt.Println(coll)
+    fmt.Println("step2: ", coll)
     c := glob_session.DB(LetuDB).C(coll)
     glob_session.SetMode(mgo.Monotonic, true)
     err := c.Find(bson.M{}).All(&results)
 
     if err != nil {
-        fmt.Println(err)
+        fmt.Println("step2: ", err)
     }
 
-    fmt.Println(results)
+    fmt.Println("step2: ", results)
 
     // uncomment this if you want to start from target brand
     //match_flag := 0
@@ -127,13 +127,13 @@ func Step2(glob_session *mgo.Session) {
 
         resp, err := httpClient.Get(url_final)
         if err != nil {
-            fmt.Println(err)
+            fmt.Println("step2: ", err)
             continue
         }
 
         body, err := ioutil.ReadAll(resp.Body)
         if err != nil {
-            fmt.Println(err)
+            fmt.Println("step2: ", err)
         }
 
         doc, err_p := html.Parse(strings.NewReader(string(body)))
@@ -143,9 +143,9 @@ func Step2(glob_session *mgo.Session) {
 
         br := &BrandPass{Name: v.Name}
         f(doc, br)
-        fmt.Println(url_final)
+        fmt.Println("step2: ", url_final)
     }
 
     elapsed := time.Since(start)
-    fmt.Printf("Script took %s", elapsed)
+    fmt.Printf("step2: Script took %s", elapsed)
 }

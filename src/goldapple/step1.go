@@ -70,7 +70,7 @@ func extractContext(s string) string {
 		tt := z.Next()
 		switch tt {
 			case html.ErrorToken:
-				fmt.Println(z.Err())
+				fmt.Println("step1: ", z.Err())
 				continue
 			case html.TextToken:
 				text := string(z.Text())
@@ -148,5 +148,5 @@ func Step1(glob_session *mgo.Session) {
         }
     }
     f(doc)
-    fmt.Println(BrandPool)
+    fmt.Println("step1: ", BrandPool)
 }

@@ -83,12 +83,12 @@ func Log(msg []byte) {
     f, err := os.OpenFile("log/"+makeTimePrefix(LogFile), os.O_RDWR|os.O_APPEND|os.O_CREATE, 0775)
     defer f.Close()
     if err != nil {
-        fmt.Println(err)
+        fmt.Println("step3: ", err)
     }
     bytemsg := []byte(msg)
     n, err := f.Write(bytemsg)
     if err == nil && n < len(bytemsg) {
-        fmt.Println(io.ErrShortWrite)
+        fmt.Println("step3: ", io.ErrShortWrite)
     }
 }
 
@@ -157,7 +157,7 @@ func Step3(glob_session *mgo.Session) {
                         pre = strings.Replace(pre, "Артикул", "", -1)
                         pre = strings.TrimSpace(pre)
                         pr.Articul = pre
-                        fmt.Println("Articul: ", pre)
+                        fmt.Println("step3: Articul: ", pre)
                         
                         // gestori match
                         var gestres Gestori
@@ -165,11 +165,11 @@ func Step3(glob_session *mgo.Session) {
                         glob_session.SetMode(mgo.Monotonic, true)
                         err := c.Find(bson.M{"Artic": pre}).One(&gestres)
                         if err != nil {
-                            fmt.Println("GESTORI NOT FOUND")
+                            fmt.Println("step3: GESTORI NOT FOUND")
                         } else {
-                            fmt.Println("GESTORI MATCH: ", gestres)
+                            fmt.Println("step3: GESTORI MATCH: ", gestres)
                             pr.Gestori = gestres.Cod_good
-                            logstring := []byte("Gestori match: "+pre+pr.Gestori+"\n")
+                            logstring := []byte("step3: Gestori match: "+pre+pr.Gestori+"\n")
                             Log(logstring)
                         }
                     }
@@ -267,7 +267,7 @@ func Step3(glob_session *mgo.Session) {
                 // check double
                 num, err := c.Find(bson.M{"articul": pr.Articul}).Count()
                 if err != nil {
-                    fmt.Println(err)
+                    fmt.Println("step3: ", err)
                 }
 
                 price := ProductPrice{
@@ -298,12 +298,12 @@ func Step3(glob_session *mgo.Session) {
                     // insert 'letu_products_final'
                     err := c.Insert(new)
                     if err != nil {
-                        fmt.Println(err)
+                        fmt.Println("step3: ", err)
                     }
                     // insert 'letu_price'
                     err = d.Insert(price)
                     if err != nil {
-                        fmt.Println(err)
+                        fmt.Println("step3: ", err)
                     }
                     e.Insert(LogStruct{
                         Subject: "letu",
@@ -315,9 +315,9 @@ func Step3(glob_session *mgo.Session) {
                     // insert 'letu_price' on double
                     err = d.Insert(price)
                     if err != nil {
-                        fmt.Println(err)
+                        fmt.Println("step3: ", err)
                     }
-                    fmt.Println("Double articul")
+                    fmt.Println("step3: Double articul")
                 }
             }
         }
@@ -350,23 +350,23 @@ func Step3(glob_session *mgo.Session) {
         url_final := LetuRootUrl + v.Link
         resp, err := httpClient.Get(url_final)
         if err != nil {
-            fmt.Println(err)
+            fmt.Println("step3: ", err)
             continue
         }
         body, err := ioutil.ReadAll(resp.Body)
         if err != nil {
-            fmt.Println(err)
+            fmt.Println("step3: ", err)
         }
         doc, err_p := html.Parse(strings.NewReader(string(body)))
         if err_p != nil {
             log.Println(err)
         }
-        fmt.Println(url_final, "\r\n")
+        fmt.Println("step3: ", url_final, "\r\n")
         br := &BrandSingle{Name: v.Brand}
         f(doc, pr, br)
         i++
     }
 
     elapsed := time.Since(start)
-    fmt.Printf("Script took %s", elapsed)
+    fmt.Printf("step3: Script took %s", elapsed)
 }
