@@ -125,7 +125,7 @@ func mongoInsertBrand(b *Brand, glob_session *mgo.Session) bool {
 
     // TODAY BRANDS DOUBLE
     // check today brands double
-    num, err := c.Find(bson.M{"name": b.Name}).Count()
+    num, err = c.Find(bson.M{"name": b.Name}).Count()
     if num < 1 {
         c_all.Insert(allb)
         fmt.Println("TODAY BRAND INSERT")
