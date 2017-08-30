@@ -15,12 +15,14 @@ import (
     "net/http"
     "io/ioutil"
     "gopkg.in/mgo.v2"
+    "gopkg.in/mgo.v2/bson"
     "golang.org/x/net/html"
     )
 
 const LetuRootUrl string = "https://www.letu.ru/"
 const LetuBrandUrl string = "https://www.letu.ru/browse/brandsDisplay.jsp"
 const LetuCollection = "letu_brands"
+const AllBrands = "all_brands"
 
 var LetuDB string = os.Getenv("LETU_MONGO_DB")
 
@@ -33,6 +35,11 @@ type Page struct {
 type Brand struct {
     Name string
     Link string
+}
+
+// all_brands collection
+type AllBrand struct {
+    Val string
 }
 
 // Brand pool
@@ -93,12 +100,43 @@ func makeTimePrefix(coll string) string {
 // Insert document to mongo brands collection
 func mongoInsertBrand(b *Brand, glob_session *mgo.Session) bool {
     coll := makeTimePrefix(LetuCollection)
+    coll_all := AllBrands
     if LetuDB == "" {
         LetuDB = "parser"
     }
     c := glob_session.DB(LetuDB).C(coll)
+    c_all := glob_session.DB(LetuDB).C(coll_all)
     glob_session.SetMode(mgo.Monotonic, true)
-    err := c.Insert(b)
+
+    // GLOBAL BRANDS DOUBLE
+    // check `all_brands`` double
+    // not so necessary but quite space economy
+    allb := AllBrand{b.Name}
+    num, err := c_all.Find(bson.M{"val": b.Name}).Count()
+    if num < 1 {
+        c_all.Insert(allb)
+        fmt.Println("GLOBAL BRAND INSERT")
+    } else {
+        fmt.Println("DOUBLE GLOBAL BRAND")
+    }
+    if err != nil {
+        fmt.Println("step1: ", err)
+    }
+
+    // TODAY BRANDS DOUBLE
+    // check today brands double
+    num, err := c.Find(bson.M{"name": b.Name}).Count()
+    if num < 1 {
+        c_all.Insert(allb)
+        fmt.Println("TODAY BRAND INSERT")
+    } else {
+        fmt.Println("DOUBLE TODAY BRAND")
+    }
+    if err != nil {
+        fmt.Println("step1: ", err)
+    }
+
+    err = c.Insert(b)
     if err != nil {
         return true
     } else {
