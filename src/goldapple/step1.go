@@ -127,7 +127,7 @@ func mongoInsertBrand(b *Brand, glob_session *mgo.Session) bool {
     // check today brands double
     num, err = c.Find(bson.M{"name": b.Name}).Count()
     if num < 1 {
-        c_all.Insert(allb)
+        err = c.Insert(b)
         fmt.Println("TODAY BRAND INSERT")
     } else {
         fmt.Println("DOUBLE TODAY BRAND")
@@ -136,7 +136,6 @@ func mongoInsertBrand(b *Brand, glob_session *mgo.Session) bool {
         fmt.Println("step1: ", err)
     }
 
-    err = c.Insert(b)
     if err != nil {
         return true
     } else {
