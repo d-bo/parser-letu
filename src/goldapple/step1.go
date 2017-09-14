@@ -40,6 +40,7 @@ type Brand struct {
 // all_brands collection
 type AllBrand struct {
     Val string
+    Source string
 }
 
 // Brand pool
@@ -111,7 +112,7 @@ func mongoInsertBrand(b *Brand, glob_session *mgo.Session) bool {
     // GLOBAL BRANDS DOUBLE
     // check `all_brands`` double
     // not so necessary but quite space economy
-    allb := AllBrand{b.Name}
+    allb := AllBrand{b.Name, "letu"}
     num, err := c_all.Find(bson.M{"val": b.Name}).Count()
     if num < 1 {
         c_all.Insert(allb)
