@@ -113,7 +113,7 @@ func mongoInsertBrand(b *Brand, glob_session *mgo.Session) bool {
     // check `all_brands`` double
     // not so necessary but quite space economy
     allb := AllBrand{b.Name, "letu"}
-    num, err := c_all.Find(bson.M{"val": b.Name}).Count()
+    num, err := c_all.Find(bson.M{"val": b.Name, "source": "letu"}).Count()
     if num < 1 {
         c_all.Insert(allb)
         fmt.Println("GLOBAL BRAND INSERT")
