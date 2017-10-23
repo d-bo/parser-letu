@@ -61,6 +61,7 @@ type ProductFinal struct {
     Img string
     Gestori string `json:"gestori,omitempty" bson:"gestori,omitempty"`
     Brand string
+    Listingprice string
 }
 
 // struct for ILDE_price
@@ -294,6 +295,7 @@ func Step3(glob_session *mgo.Session) {
                         Img: pr.Img,
                         Gestori: pr.Gestori,
                         Brand: br.Name,
+                        Listingprice: pr.Price,
                     }
                     // insert 'letu_products_final'
                     err := c.Insert(new)
@@ -312,12 +314,20 @@ func Step3(glob_session *mgo.Session) {
                         Date: makeTimePrefix(""),
                     })
                 } else {
+                    // update price column
+                    change := mgo.Change{
+                        Update: bson.M{"$set": bson.M{"listingprice": pr.Price}},
+                        ReturnNew: true,
+                    }
+                    doc := ProductFinal{}
+                    c.Find(bson.M{"articul": pr.Articul}).Apply(change, &doc)
                     // insert 'letu_price' on double
                     err = d.Insert(price)
                     if err != nil {
                         fmt.Println("step3: ", err)
                     }
                     fmt.Println("step3: Double articul")
+                    fmt.Println(doc)
                 }
             }
         }
