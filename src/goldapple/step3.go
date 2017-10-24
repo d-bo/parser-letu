@@ -51,6 +51,8 @@ type Product struct {
     Img string
     Gestori string `json:"gestori,omitempty" bson:"gestori,omitempty"`
     Brand string
+    Listingprice string
+    Volume string
 }
 
 // ProductFinal
@@ -62,6 +64,7 @@ type ProductFinal struct {
     Gestori string `json:"gestori,omitempty" bson:"gestori,omitempty"`
     Brand string
     Listingprice string
+    Volume string
 }
 
 // struct for ILDE_price
@@ -112,6 +115,7 @@ func Step3(glob_session *mgo.Session) {
     var f4 func(*html.Node, *Product)
     var f5 func(*html.Node, *Product)
     var f6 func(*html.Node, *Product)
+    var f7 func(*html.Node, *Product)
 
 
 
@@ -208,7 +212,7 @@ func Step3(glob_session *mgo.Session) {
                         pre := renderNode(node)
                         pre = extractContext(pre)
                         pre = strings.TrimSpace(pre)
-                        pr.Desc = pre
+                        pr.Volume = pre
                     }
                 }
             }
@@ -217,36 +221,6 @@ func Step3(glob_session *mgo.Session) {
             f5(c, pr)
         }
     }
-    // extract image
-    f6 = func(node *html.Node, pr *Product) {
-        if node.Type == html.ElementNode && node.Data == "img" {
-            for _, a := range node.Attr {
-                //key := strings.TrimSpace(a.Val)
-                if strings.Contains(a.Val, "src") {
-                    //value := strings.TrimSpace(a.Val)
-                }
-                if a.Key == "itemprop" {
-                    //if strings.Contains(a.Val, "jpg") {
-                    if a.Val == "image" {
-                        //match = true
-                        /*
-                        pre := renderNode(node)
-                        pre = extractContext(pre)
-                        pre = strings.TrimSpace(pre)
-                        pr.Img = pre
-                        fmt.Println(pr)
-                        */
-                    }
-                }
-            }
-        }
-
-        i = 0
-        for c := node.FirstChild; c != nil; c = c.NextSibling {
-            f6(c, pr)
-        }
-    }
-    
     // found product container
     f1 = func(node *html.Node, pr *Product, br *BrandSingle) {
         if node.Type == html.ElementNode && node.Data == "tr" {
@@ -296,6 +270,7 @@ func Step3(glob_session *mgo.Session) {
                         Gestori: pr.Gestori,
                         Brand: br.Name,
                         Listingprice: pr.Price,
+                        Volume: pr.Volume,
                     }
                     // insert 'letu_products_final'
                     err := c.Insert(new)
@@ -316,7 +291,15 @@ func Step3(glob_session *mgo.Session) {
                 } else {
                     // update price column
                     change := mgo.Change{
-                        Update: bson.M{"$set": bson.M{"listingprice": pr.Price}},
+                        Update: bson.M{
+                            "$set": bson.M{
+                                "listingprice": pr.Price,
+                                // as of fixed 24.10.17
+                                "desc": pr.Desc,
+                                "volume": pr.Volume,
+                                "img": pr.Img,
+                            },
+                        },
                         ReturnNew: true,
                     }
                     doc := ProductFinal{}
@@ -327,7 +310,6 @@ func Step3(glob_session *mgo.Session) {
                         fmt.Println("step3: ", err)
                     }
                     fmt.Println("step3: Double articul")
-                    fmt.Println(doc)
                 }
             }
         }
@@ -335,6 +317,69 @@ func Step3(glob_session *mgo.Session) {
             f1(c, pr, br)
         }
     }
+    // extract image
+    f6 = func(node *html.Node, pr *Product) {
+        src := ""
+        match := false
+        _ = match
+        _ = src
+        if node.Type == html.ElementNode && node.Data == "img" {
+            for _, a := range node.Attr {
+                if a.Key == "itemprop" {
+                    if strings.Contains(a.Val, "image") {
+                        match = true
+                        fmt.Println("MATCH")
+                    }
+                }
+                if a.Key == "src" {
+                    if strings.Contains(a.Val, "jpg") {
+                        src = a.Val
+                    }
+                }
+            }
+            if match == true {
+                pr.Img = src
+                fmt.Println("IMAGE: ", src)
+            }
+            match = false
+        }
+        i = 0
+        for c := node.FirstChild; c != nil; c = c.NextSibling {
+            f6(c, pr)
+        }
+    }
+    // extract image
+    f7 = func(node *html.Node, pr *Product) {
+        dsc := ""
+        match := false
+        _ = match
+        _ = dsc
+        if node.Type == html.ElementNode && node.Data == "div" {
+            for _, a := range node.Attr {
+                if a.Key == "itemprop" {
+                    if strings.Contains(a.Val, "description") {
+                        pre := renderNode(node)
+                        pre = extractContext(pre)
+                        pre = strings.TrimSpace(pre)
+                        pr.Desc = pre
+                        fmt.Println("MATCH DESC", pr.Desc)
+                    }
+                }
+            }
+        }
+
+        for c := node.FirstChild; c != nil; c = c.NextSibling {
+            f7(c, pr)
+        }
+    }
+
+/*
+                        pre := renderNode(node)
+                        pre = extractContext(pre)
+                        pre = strings.TrimSpace(pre)
+                        pr.Desc = pre
+                        fmt.Println(pr.Desc)
+*/
 
     start := time.Now()
 
@@ -373,7 +418,12 @@ func Step3(glob_session *mgo.Session) {
         }
         fmt.Println("step3: ", url_final, "\r\n")
         br := &BrandSingle{Name: v.Brand}
+        // find product image
+        // just before as all the text context
+        f6(doc, pr)
+        f7(doc, pr)
         f(doc, pr, br)
+        fmt.Println(pr)
         i++
     }
 
