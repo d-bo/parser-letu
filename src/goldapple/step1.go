@@ -49,11 +49,12 @@ var BrandPool []Brand
 // Get url http response
 func loadPage(url string) (*Page) {
     var httpClient = &http.Client{
-        Timeout: time.Second * 10,
+        Timeout: time.Second * 120,
     }
     resp, err := httpClient.Get(url)
-    if err != nil && resp.StatusCode == 200 {
-        panic(err)
+    if err != nil {
+        fmt.Println("LETU ERROR step1: ", err)
+        continue
     }
     body, err := ioutil.ReadAll(resp.Body)
     return &Page{Body: body}
