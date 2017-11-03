@@ -53,6 +53,7 @@ type Product struct {
     Brand string
     Listingprice string
     Volume string
+    Url string
 }
 
 // ProductFinal
@@ -65,6 +66,7 @@ type ProductFinal struct {
     Brand string
     Listingprice string
     Volume string
+    Url string
 }
 
 // struct for ILDE_price
@@ -271,6 +273,7 @@ func Step3(glob_session *mgo.Session) {
                         Brand: br.Name,
                         Listingprice: pr.Price,
                         Volume: pr.Volume,
+                        Url: pr.Url,
                     }
                     // insert 'letu_products_final'
                     err := c.Insert(new)
@@ -282,6 +285,7 @@ func Step3(glob_session *mgo.Session) {
                     if err != nil {
                         fmt.Println("step3: ", err)
                     }
+                    // log new product
                     e.Insert(LogStruct{
                         Subject: "letu",
                         Action: "new_articul",
@@ -289,6 +293,7 @@ func Step3(glob_session *mgo.Session) {
                         Date: makeTimePrefix(""),
                     })
                 } else {
+                    // if DOUBLE
                     // update price column
                     change := mgo.Change{
                         Update: bson.M{
@@ -298,6 +303,7 @@ func Step3(glob_session *mgo.Session) {
                                 "desc": pr.Desc,
                                 "volume": pr.Volume,
                                 "img": pr.Img,
+                                "url": pr.Url,
                             },
                         },
                         ReturnNew: true,
@@ -398,11 +404,11 @@ func Step3(glob_session *mgo.Session) {
 
     i = 0
     for _, v := range results {
-        pr = &Product{Price: "default"}
         var httpClient = &http.Client{
             Timeout: time.Second * 120,
         }
         url_final := LetuRootUrl + v.Link
+        pr = &Product{Price: "default", Url: url_final}
         resp, err := httpClient.Get(url_final)
         if err != nil {
             fmt.Println("step3: ", err)

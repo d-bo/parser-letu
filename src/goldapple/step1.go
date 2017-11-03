@@ -54,7 +54,7 @@ func loadPage(url string) (*Page) {
     resp, err := httpClient.Get(url)
     if err != nil {
         fmt.Println("LETU ERROR step1: ", err)
-        continue
+        return &Page{Body: []byte{0}}
     }
     body, err := ioutil.ReadAll(resp.Body)
     return &Page{Body: body}
