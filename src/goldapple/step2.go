@@ -122,7 +122,7 @@ func Step2(glob_session *mgo.Session) {
         }
 
         var httpClient = &http.Client{
-            Timeout: time.Second * 120,
+            Timeout: time.Second * 1200,
         }
 
         resp, err := httpClient.Get(url_final)

@@ -405,7 +405,7 @@ func Step3(glob_session *mgo.Session) {
     i = 0
     for _, v := range results {
         var httpClient = &http.Client{
-            Timeout: time.Second * 120,
+            Timeout: time.Second * 1200,
         }
         url_final := LetuRootUrl + v.Link
         pr = &Product{Price: "default", Url: url_final}

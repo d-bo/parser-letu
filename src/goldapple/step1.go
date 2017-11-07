@@ -49,7 +49,7 @@ var BrandPool []Brand
 // Get url http response
 func loadPage(url string) (*Page) {
     var httpClient = &http.Client{
-        Timeout: time.Second * 120,
+        Timeout: time.Second * 1200,
     }
     resp, err := httpClient.Get(url)
     if err != nil {
