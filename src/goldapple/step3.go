@@ -8,7 +8,6 @@ import (
     "os"
     "io"
     "log"
-    "fmt"
     "time"
     "strings"
     "net/http"
@@ -16,6 +15,7 @@ import (
     "gopkg.in/mgo.v2"
     "gopkg.in/mgo.v2/bson"
     "golang.org/x/net/html"
+    "github.com/blackjack/syslog"
     )
 
 const LetuProducts = "letu_products_final"
@@ -89,12 +89,12 @@ func Log(msg []byte) {
     f, err := os.OpenFile("log/"+makeTimePrefix(LogFile), os.O_RDWR|os.O_APPEND|os.O_CREATE, 0775)
     defer f.Close()
     if err != nil {
-        fmt.Println("step3: ", err)
+        syslog.Critf("Step3 openfile error: %s", err)
     }
     bytemsg := []byte(msg)
     n, err := f.Write(bytemsg)
     if err == nil && n < len(bytemsg) {
-        fmt.Println("step3: ", io.ErrShortWrite)
+        syslog.Critf("Step3 logwrite error: %s", io.ErrShortWrite)
     }
 }
 
@@ -106,6 +106,8 @@ func makeTimeMonthlyPrefix(coll string) string {
 }
 
 func Step3(glob_session *mgo.Session) {
+
+    syslog.Syslog(syslog.LOG_INFO, "Letu step3 start")
 
     var i int
     var pr *Product
@@ -164,7 +166,6 @@ func Step3(glob_session *mgo.Session) {
                         pre = strings.Replace(pre, "Артикул", "", -1)
                         pre = strings.TrimSpace(pre)
                         pr.Articul = pre
-                        fmt.Println("step3: Articul: ", pre)
                         
                         // gestori match
                         var gestres Gestori
@@ -172,12 +173,9 @@ func Step3(glob_session *mgo.Session) {
                         glob_session.SetMode(mgo.Monotonic, true)
                         err := c.Find(bson.M{"Artic": pre}).One(&gestres)
                         if err != nil {
-                            fmt.Println("step3: GESTORI NOT FOUND")
+                            syslog.Critf("Step3 find gestori error: %s", err)
                         } else {
-                            fmt.Println("step3: GESTORI MATCH: ", gestres)
-                            pr.Gestori = gestres.Cod_good
-                            logstring := []byte("step3: Gestori match: "+pre+pr.Gestori+"\n")
-                            Log(logstring)
+                            syslog.Syslog(syslog.LOG_INFO, "Step3 gestori match")
                         }
                     }
                 }
@@ -244,7 +242,7 @@ func Step3(glob_session *mgo.Session) {
                 // check double
                 num, err := c.Find(bson.M{"articul": pr.Articul}).Count()
                 if err != nil {
-                    fmt.Println("step3: ", err)
+                    syslog.Critf("Step3 check double error: %s", err)
                 }
 
                 price := ProductPrice{
@@ -278,12 +276,12 @@ func Step3(glob_session *mgo.Session) {
                     // insert 'letu_products_final'
                     err := c.Insert(new)
                     if err != nil {
-                        fmt.Println("step3: ", err)
+                        syslog.Critf("Step3 insert final product error: %s", err)
                     }
                     // insert 'letu_price'
                     err = d.Insert(price)
                     if err != nil {
-                        fmt.Println("step3: ", err)
+                        syslog.Critf("Step3 insert price error: %s", err)
                     }
                     // log new product
                     e.Insert(LogStruct{
@@ -313,9 +311,8 @@ func Step3(glob_session *mgo.Session) {
                     // insert 'letu_price' on double
                     err = d.Insert(price)
                     if err != nil {
-                        fmt.Println("step3: ", err)
+                        syslog.Critf("Step3 insert on double price error: %s", err)
                     }
-                    fmt.Println("step3: Double articul")
                 }
             }
         }
@@ -334,7 +331,6 @@ func Step3(glob_session *mgo.Session) {
                 if a.Key == "itemprop" {
                     if strings.Contains(a.Val, "image") {
                         match = true
-                        fmt.Println("MATCH")
                     }
                 }
                 if a.Key == "src" {
@@ -345,7 +341,6 @@ func Step3(glob_session *mgo.Session) {
             }
             if match == true {
                 pr.Img = src
-                fmt.Println("IMAGE: ", src)
             }
             match = false
         }
@@ -354,6 +349,7 @@ func Step3(glob_session *mgo.Session) {
             f6(c, pr)
         }
     }
+
     // extract image
     f7 = func(node *html.Node, pr *Product) {
         dsc := ""
@@ -368,7 +364,6 @@ func Step3(glob_session *mgo.Session) {
                         pre = extractContext(pre)
                         pre = strings.TrimSpace(pre)
                         pr.Desc = pre
-                        fmt.Println("MATCH DESC", pr.Desc)
                     }
                 }
             }
@@ -378,16 +373,6 @@ func Step3(glob_session *mgo.Session) {
             f7(c, pr)
         }
     }
-
-/*
-                        pre := renderNode(node)
-                        pre = extractContext(pre)
-                        pre = strings.TrimSpace(pre)
-                        pr.Desc = pre
-                        fmt.Println(pr.Desc)
-*/
-
-    start := time.Now()
 
     // get target pages from mongo
     coll := makeTimePrefix(LetuCollectionPages)
@@ -399,40 +384,37 @@ func Step3(glob_session *mgo.Session) {
     err := c.Find(bson.M{}).All(&results)
 
     if err != nil {
-        fmt.Println(err)
+        syslog.Critf("Step3 find error: %s", err)
     }
 
     i = 0
     for _, v := range results {
         var httpClient = &http.Client{
-            Timeout: time.Second * 1200,
+            Timeout: time.Second * 2200,
         }
         url_final := LetuRootUrl + v.Link
         pr = &Product{Price: "default", Url: url_final}
         resp, err := httpClient.Get(url_final)
         if err != nil {
-            fmt.Println("step3: ", err)
+            syslog.Critf("Step3 httpClient error: %s", err)
             continue
         }
         body, err := ioutil.ReadAll(resp.Body)
         if err != nil {
-            fmt.Println("step3: ", err)
+            syslog.Critf("Step3 ioutil.ReadAll error: %s", err)
         }
         doc, err_p := html.Parse(strings.NewReader(string(body)))
         if err_p != nil {
             log.Println(err)
         }
-        fmt.Println("step3: ", url_final, "\r\n")
         br := &BrandSingle{Name: v.Brand}
         // find product image
         // just before as all the text context
         f6(doc, pr)
         f7(doc, pr)
         f(doc, pr, br)
-        fmt.Println(pr)
         i++
     }
 
-    elapsed := time.Since(start)
-    fmt.Printf("step3: Script took %s", elapsed)
+    syslog.Syslog(syslog.LOG_INFO, "Letu step3 end")
 }

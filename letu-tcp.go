@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"goldapple"
 	"gopkg.in/mgo.v2"
+	"github.com/blackjack/syslog"
 )
 
 const (
@@ -36,11 +37,15 @@ func makeTimePrefix(coll string) string {
 }
 
 func main() {
+
+    syslog.Openlog("letu_parser", syslog.LOG_PID, syslog.LOG_USER)
+    syslog.Syslog(syslog.LOG_INFO, "Start LETU parser ... " + C_HOST + ":" + C_PORT)
+
 	glob_session, glob_err := mgo.Dial("mongodb://localhost:27017/")
 	if glob_err != nil {
 		fmt.Println("Mongo connection error: ", glob_err)
 	}
-	sigc := make(chan os.Signal, 1)
+	sigc := make(chan os.Signal)
 	signal.Notify(sigc,
 		syscall.SIGHUP,
 		syscall.SIGINT,
@@ -50,34 +55,33 @@ func main() {
 		s := <-sigc
 		switch s {
 			case syscall.SIGHUP:
-				fmt.Println("LETU: SIGHUP")
+				syslog.Syslog(syslog.LOG_INFO, "Letu exit SIGHUP")
 				glob_session.Close()
 				os.Exit(0)
 			case syscall.SIGINT:
-				fmt.Println("LETU: SIGINT")
+				syslog.Syslog(syslog.LOG_INFO, "Letu exit SIGINT")
 				glob_session.Close()
 				os.Exit(0)
 			case syscall.SIGTERM:
-				fmt.Println("LETU: SIGTERM")
+				syslog.Syslog(syslog.LOG_INFO, "Letu exit SIGTERM")
 				glob_session.Close()
 				os.Exit(0)
 			case syscall.SIGQUIT:
-				fmt.Println("LETU: SIGQUIT")
+				syslog.Syslog(syslog.LOG_INFO, "Letu exit SIGQUIT")
 				glob_session.Close()
 				os.Exit(0)
 		}
 	}()
-	l, err := net.Listen(C_TYPE, C_HOST+":"+C_PORT)
+	l, err := net.Listen(C_TYPE, C_HOST + ":" + C_PORT)
 	if err != nil {
 		fmt.Println("TCP server error: ", err)
 		os.Exit(1)
 	}
 	defer l.Close()
-	fmt.Println("Launch LETU tcp: "+C_HOST+":"+C_PORT+" ...")
 	for {
 		conn, err := l.Accept()
 		if err != nil {
-			fmt.Println("Error accepting: ", err.Error())
+			syslog.Critf("Error accepting: %s", err.Error())
 			os.Exit(1)
 		}
 		go handleRequest(conn, glob_session)
@@ -90,7 +94,7 @@ func handleRequest(conn net.Conn, session *mgo.Session) {
 	buf := make([]byte, 128)
 	len, err := conn.Read(buf)
 	if err != nil {
-		fmt.Println("Error reading: ", err.Error())
+		syslog.Critf("Error reading: %s", err.Error())
 	}
 	str := string(buf[:len])
 
@@ -109,10 +113,9 @@ func handleRequest(conn net.Conn, session *mgo.Session) {
 	switch str {
 		case "start":
 			if num > 1 {
-				fmt.Println("Allready started")
+				syslog.Syslog(syslog.LOG_INFO, "LETU allready started")
 				os.Exit(0)
 			}
-			fmt.Println("Start LETU parser ...\n")
 			goldapple.Step1(session)
 			goldapple.Step2(session)
 			goldapple.Step3(session)

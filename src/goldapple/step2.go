@@ -6,7 +6,6 @@ package goldapple
 
 import (
     "log"
-    "fmt"
     "time"
     "strings"
     "net/http"
@@ -14,6 +13,7 @@ import (
     "gopkg.in/mgo.v2"
     "gopkg.in/mgo.v2/bson"
     "golang.org/x/net/html"
+    "github.com/blackjack/syslog"
     )
 
 var LetuCollectionPages = "letu_pages"
@@ -35,7 +35,8 @@ var LinkPool []Link
 var BrandPoolResult []Brand
 
 func Step2(glob_session *mgo.Session) {
-    start := time.Now()
+
+    syslog.Syslog(syslog.LOG_INFO, "Letu step2 start")
 
     // html parser itself
     var f func(*html.Node, *BrandPass)
@@ -71,7 +72,7 @@ func Step2(glob_session *mgo.Session) {
                 err := c.Insert(b)
 
                 if err != nil {
-                    fmt.Println("step2: ", err)
+                    syslog.Critf("Step2 link insert error: %s", err)
                 }
             }
         }
@@ -89,16 +90,13 @@ func Step2(glob_session *mgo.Session) {
         LetuDB = "parser"
     }
     coll := makeTimePrefix(LetuCollection)
-    fmt.Println("step2: ", coll)
     c := glob_session.DB(LetuDB).C(coll)
     glob_session.SetMode(mgo.Monotonic, true)
     err := c.Find(bson.M{}).All(&results)
 
     if err != nil {
-        fmt.Println("step2: ", err)
+        syslog.Critf("Step2 find error: %s", err)
     }
-
-    fmt.Println("step2: ", results)
 
     // uncomment this if you want to start from target brand
     //match_flag := 0
@@ -122,18 +120,18 @@ func Step2(glob_session *mgo.Session) {
         }
 
         var httpClient = &http.Client{
-            Timeout: time.Second * 1200,
+            Timeout: time.Second * 2200,
         }
 
         resp, err := httpClient.Get(url_final)
         if err != nil {
-            fmt.Println("step2: ", err)
+            syslog.Critf("Step2 httpClient get error: %s", err)
             continue
         }
 
         body, err := ioutil.ReadAll(resp.Body)
         if err != nil {
-            fmt.Println("step2: ", err)
+            syslog.Critf("Step2 insert error: %s", err)
         }
 
         doc, err_p := html.Parse(strings.NewReader(string(body)))
@@ -143,9 +141,7 @@ func Step2(glob_session *mgo.Session) {
 
         br := &BrandPass{Name: v.Name}
         f(doc, br)
-        fmt.Println("step2: ", url_final)
     }
 
-    elapsed := time.Since(start)
-    fmt.Printf("step2: Script took %s", elapsed)
+    syslog.Syslog(syslog.LOG_INFO, "Letu step2 end")
 }

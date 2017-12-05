@@ -8,7 +8,6 @@ import (
     "os"
     "io"
     "log"
-    "fmt"
     "time"
     "bytes"
     "strings"
@@ -17,6 +16,7 @@ import (
     "gopkg.in/mgo.v2"
     "gopkg.in/mgo.v2/bson"
     "golang.org/x/net/html"
+    "github.com/blackjack/syslog"
     )
 
 const LetuRootUrl string = "https://www.letu.ru/"
@@ -49,11 +49,11 @@ var BrandPool []Brand
 // Get url http response
 func loadPage(url string) (*Page) {
     var httpClient = &http.Client{
-        Timeout: time.Second * 1200,
+        Timeout: time.Second * 2200,
     }
     resp, err := httpClient.Get(url)
     if err != nil {
-        fmt.Println("LETU ERROR step1: ", err)
+        syslog.Critf("Step1 load page error: %s", err)
         return &Page{Body: []byte{0}}
     }
     body, err := ioutil.ReadAll(resp.Body)
@@ -79,8 +79,8 @@ func extractContext(s string) string {
 		tt := z.Next()
 		switch tt {
 			case html.ErrorToken:
-				fmt.Println("step1: ", z.Err())
-				continue
+                syslog.Critf("Step1 extractContext() error: %s", z.Err())
+				return ""
 			case html.TextToken:
 				text := string(z.Text())
 				return text
@@ -117,12 +117,10 @@ func mongoInsertBrand(b *Brand, glob_session *mgo.Session) bool {
     num, err := c_all.Find(bson.M{"val": b.Name, "source": "letu"}).Count()
     if num < 1 {
         c_all.Insert(allb)
-        fmt.Println("GLOBAL BRAND INSERT")
     } else {
-        fmt.Println("DOUBLE GLOBAL BRAND")
     }
     if err != nil {
-        fmt.Println("step1: ", err)
+        syslog.Critf("Step1 insert brand error: %s", err)
     }
 
     // TODAY BRANDS DOUBLE
@@ -130,12 +128,10 @@ func mongoInsertBrand(b *Brand, glob_session *mgo.Session) bool {
     num, err = c.Find(bson.M{"name": b.Name}).Count()
     if num < 1 {
         err = c.Insert(b)
-        fmt.Println("TODAY BRAND INSERT")
     } else {
-        fmt.Println("DOUBLE TODAY BRAND")
     }
     if err != nil {
-        fmt.Println("step1: ", err)
+        syslog.Critf("Step1 insert error: %s", err)
     }
 
     if err != nil {
@@ -146,6 +142,9 @@ func mongoInsertBrand(b *Brand, glob_session *mgo.Session) bool {
 }
 
 func Step1(glob_session *mgo.Session) {
+
+    syslog.Syslog(syslog.LOG_INFO, "Letu step1 start")
+
     body := loadPage(LetuBrandUrl)
     doc, err := html.Parse(strings.NewReader(string(body.Body)))
 
@@ -187,5 +186,5 @@ func Step1(glob_session *mgo.Session) {
         }
     }
     f(doc)
-    fmt.Println("step1: ", BrandPool)
+    syslog.Syslog(syslog.LOG_INFO, "Letu step1 end")
 }

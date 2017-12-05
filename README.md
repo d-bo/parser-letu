@@ -5,6 +5,7 @@ cd parser_letu
 export GOPATH=`pwd`
 go get golang.org/x/net/html
 go get gopkg.in/mgo.v2
+go get github.com/blackjack/syslog
 # goldapple pkg
 go build goldapple
 go install goldapple
