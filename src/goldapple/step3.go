@@ -7,6 +7,7 @@ package goldapple
 import (
     "os"
     "io"
+    "fmt"
     "log"
     "time"
     "strings"
@@ -18,11 +19,15 @@ import (
     "github.com/blackjack/syslog"
     )
 
-const LetuProducts = "letu_products_final"
-const LetuPrice = "letu_price"
-const GestoriDB = "gestori"
-const LogFile = "Log"
-const LogCollection = "Log"
+var ENV_PREF string
+
+const (
+    LetuProducts = "letu_products_final"
+    LetuPrice = "letu_price"
+    GestoriDB = "gestori"
+    LogFile = "Log"
+    LogCollection = "Log"
+)
 
 type LogStruct struct {
     Subject string
@@ -52,6 +57,7 @@ type Product struct {
     Gestori string `json:"gestori,omitempty" bson:"gestori,omitempty"`
     Brand string
     Listingprice string
+    Oldprice string
     Volume string
     Url string
 }
@@ -65,6 +71,7 @@ type ProductFinal struct {
     Gestori string `json:"gestori,omitempty" bson:"gestori,omitempty"`
     Brand string
     Listingprice string
+    Oldeprice string
     Volume string
     Url string
 }
@@ -73,6 +80,7 @@ type ProductFinal struct {
 type ProductPrice struct {
     Price string
     Price_discount string
+    Oldprice string
     Articul string
     Brand string
 }
@@ -90,6 +98,7 @@ func Log(msg []byte) {
     defer f.Close()
     if err != nil {
         syslog.Critf("Step3 openfile error: %s", err)
+        fmt.Println("Step3 openfile error", err)
     }
     bytemsg := []byte(msg)
     n, err := f.Write(bytemsg)
@@ -108,6 +117,7 @@ func makeTimeMonthlyPrefix(coll string) string {
 func Step3(glob_session *mgo.Session) {
 
     syslog.Syslog(syslog.LOG_INFO, "Letu step3 start")
+    fmt.Println("Letu step3 start")
 
     var i int
     var pr *Product
@@ -120,9 +130,13 @@ func Step3(glob_session *mgo.Session) {
     var f5 func(*html.Node, *Product)
     var f6 func(*html.Node, *Product)
     var f7 func(*html.Node, *Product)
+    var f8 func(*html.Node, *Product)
+    var f9 func(*html.Node, *Product)
+    var f10 func(*html.Node, *Product)
 
 
 
+    // Products html table
     f = func(node *html.Node, pr *Product, br *BrandSingle) {
         if node.Type == html.ElementNode && node.Data == "table" {
             for _, a := range node.Attr {
@@ -138,96 +152,14 @@ func Step3(glob_session *mgo.Session) {
             f(c, pr, br)
         }
     }
-    // extract price
-    f2 = func(node *html.Node, pr *Product) {
-        if node.Type == html.ElementNode && node.Data == "p" {
-            for _, a := range node.Attr {
-                if a.Key == "class" {
-                    if strings.Contains(a.Val, "price_no_discount") {
-                        pre := renderNode(node)
-                        pre = extractContext(pre)
-                        pr.Price = pre
-                    }
-                }
-            }
-        }
-        for c := node.FirstChild; c != nil; c = c.NextSibling {
-            f2(c, pr)
-        }
-    }
-    // extract articul
-    f3 = func(node *html.Node, pr *Product) {
-        if node.Type == html.ElementNode && node.Data == "p" {
-            for _, a := range node.Attr {
-                if a.Key == "class" {
-                    if strings.Contains(a.Val, "article") {
-                        pre := renderNode(node)
-                        pre = extractContext(pre)
-                        pre = strings.Replace(pre, "Артикул", "", -1)
-                        pre = strings.TrimSpace(pre)
-                        pr.Articul = pre
-                        
-                        // gestori match
-                        var gestres Gestori
-                        c := glob_session.DB(LetuDB).C(LetuProducts)
-                        glob_session.SetMode(mgo.Monotonic, true)
-                        err := c.Find(bson.M{"Artic": pre}).One(&gestres)
-                        if err != nil {
-                            syslog.Critf("Step3 find gestori error: %s", err)
-                        } else {
-                            syslog.Syslog(syslog.LOG_INFO, "Step3 gestori match")
-                        }
-                    }
-                }
-            }
-        }
-        for c := node.FirstChild; c != nil; c = c.NextSibling {
-            f3(c, pr)
-        }
-    }
-    // extract articul
-    f4 = func(node *html.Node, pr *Product) {
-        if node.Type == html.ElementNode && node.Data == "div" {
-            for _, a := range node.Attr {
-                if a.Key == "class" {
-                    if strings.Contains(a.Val, "h2-like") {
-                        pre := renderNode(node)
-                        pre = extractContext(pre)
-                        pre = strings.TrimSpace(pre)
-                        pr.Name = pre
-                    }
-                }
-            }
-        }
-        for c := node.FirstChild; c != nil; c = c.NextSibling {
-            f4(c, pr)
-        }
-    }
-    // extract articul
-    f5 = func(node *html.Node, pr *Product) {
-        if node.Type == html.ElementNode && node.Data == "p" {
-            for _, a := range node.Attr {
-                if a.Key == "class" {
-                    if strings.Contains(a.Val, "description") {
-                        pre := renderNode(node)
-                        pre = extractContext(pre)
-                        pre = strings.TrimSpace(pre)
-                        pr.Volume = pre
-                    }
-                }
-            }
-        }
-        for c := node.FirstChild; c != nil; c = c.NextSibling {
-            f5(c, pr)
-        }
-    }
-    // found product container
+
+    // Found product container
     f1 = func(node *html.Node, pr *Product, br *BrandSingle) {
         if node.Type == html.ElementNode && node.Data == "tr" {
-            f2(node, pr)	// price
-            f3(node, pr)	// article
-            f4(node, pr)	// name
-            f5(node, pr)	// desc
+            f2(node, pr)    // price
+            f3(node, pr)    // article
+            f4(node, pr)    // name
+            f5(node, pr)    // desc
 
             if pr.Price != "default" {
                 if LetuDB == "" {
@@ -242,7 +174,8 @@ func Step3(glob_session *mgo.Session) {
                 // check double
                 num, err := c.Find(bson.M{"articul": pr.Articul}).Count()
                 if err != nil {
-                    syslog.Critf("Step3 check double error: %s", err)
+                    syslog.Critf("Step3 check double zero err: %s", err)
+                    fmt.Println("Step3 count double zero err", err)
                 }
 
                 price := ProductPrice{
@@ -253,7 +186,7 @@ func Step3(glob_session *mgo.Session) {
                 }
 
                 if num < 1 {
-
+                    fmt.Println("New:", pr.Articul)
                     /*
                     Name string
                     Articul string
@@ -273,17 +206,22 @@ func Step3(glob_session *mgo.Session) {
                         Volume: pr.Volume,
                         Url: pr.Url,
                     }
-                    // insert 'letu_products_final'
+                    // Insert 'letu_products_final'
                     err := c.Insert(new)
                     if err != nil {
                         syslog.Critf("Step3 insert final product error: %s", err)
+                        fmt.Println("Step3 insert final product error", err)
+                    } else {
+                        // Success insert new prod
+                        fmt.Println("New prod:", pr.Articul)
                     }
-                    // insert 'letu_price'
+                    // Insert 'letu_price'
                     err = d.Insert(price)
                     if err != nil {
                         syslog.Critf("Step3 insert price error: %s", err)
+                        fmt.Println("Step3 insert price error", err)
                     }
-                    // log new product
+                    // Log new product
                     e.Insert(LogStruct{
                         Subject: "letu",
                         Action: "new_articul",
@@ -291,8 +229,9 @@ func Step3(glob_session *mgo.Session) {
                         Date: makeTimePrefix(""),
                     })
                 } else {
-                    // if DOUBLE
-                    // update price column
+                    fmt.Println("DOUBLE:", pr.Articul)
+                    // DOUBLE ??
+                    // Update price column
                     change := mgo.Change{
                         Update: bson.M{
                             "$set": bson.M{
@@ -312,6 +251,7 @@ func Step3(glob_session *mgo.Session) {
                     err = d.Insert(price)
                     if err != nil {
                         syslog.Critf("Step3 insert on double price error: %s", err)
+                        fmt.Println("Step3 insert on double price error", err)
                     }
                 }
             }
@@ -320,7 +260,84 @@ func Step3(glob_session *mgo.Session) {
             f1(c, pr, br)
         }
     }
-    // extract image
+
+    // Extract no discount price
+    f2 = func(node *html.Node, pr *Product) {
+        if node.Type == html.ElementNode && node.Data == "p" {
+            for _, a := range node.Attr {
+                if a.Key == "class" {
+                    if strings.Contains(a.Val, "price_no_discount") {
+                        pre := renderNode(node)
+                        pre = extractContext(pre)
+                        pr.Price = pre
+                    }
+                }
+            }
+        }
+        for c := node.FirstChild; c != nil; c = c.NextSibling {
+            f2(c, pr)
+        }
+    }
+
+    // Extract articul
+    f3 = func(node *html.Node, pr *Product) {
+        if node.Type == html.ElementNode && node.Data == "p" {
+            for _, a := range node.Attr {
+                if a.Key == "class" {
+                    if strings.Contains(a.Val, "article") {
+                        pre := renderNode(node)
+                        pre = extractContext(pre)
+                        pre = strings.Replace(pre, "Артикул", "", -1)
+                        pre = strings.TrimSpace(pre)
+                        pr.Articul = pre
+                    }
+                }
+            }
+        }
+        for c := node.FirstChild; c != nil; c = c.NextSibling {
+            f3(c, pr)
+        }
+    }
+
+    // Extract name
+    f4 = func(node *html.Node, pr *Product) {
+        if node.Type == html.ElementNode && node.Data == "div" {
+            for _, a := range node.Attr {
+                if a.Key == "class" {
+                    if strings.Contains(a.Val, "h2-like") {
+                        pre := renderNode(node)
+                        pre = extractContext(pre)
+                        pre = strings.TrimSpace(pre)
+                        pr.Name = pre
+                    }
+                }
+            }
+        }
+        for c := node.FirstChild; c != nil; c = c.NextSibling {
+            f4(c, pr)
+        }
+    }
+
+    // Extract volume
+    f5 = func(node *html.Node, pr *Product) {
+        if node.Type == html.ElementNode && node.Data == "p" {
+            for _, a := range node.Attr {
+                if a.Key == "class" {
+                    if strings.Contains(a.Val, "description") {
+                        pre := renderNode(node)
+                        pre = extractContext(pre)
+                        pre = strings.TrimSpace(pre)
+                        pr.Volume = pre
+                    }
+                }
+            }
+        }
+        for c := node.FirstChild; c != nil; c = c.NextSibling {
+            f5(c, pr)
+        }
+    }
+
+    // Extract image
     f6 = func(node *html.Node, pr *Product) {
         src := ""
         match := false
@@ -350,7 +367,7 @@ func Step3(glob_session *mgo.Session) {
         }
     }
 
-    // extract image
+    // Extract description
     f7 = func(node *html.Node, pr *Product) {
         dsc := ""
         match := false
@@ -374,6 +391,80 @@ func Step3(glob_session *mgo.Session) {
         }
     }
 
+    // Extract old price
+    // If exist
+    f8 = func(node *html.Node, pr *Product) {
+        if node.Type == html.ElementNode && node.Data == "p" {
+            for _, a := range node.Attr {
+                if a.Key == "class" {
+                    if strings.Contains(a.Val, "old_price") {
+                        pre := renderNode(node)
+                        pre = extractContext(pre)
+                        pre = strings.Replace(pre, "&nbsp;", "", -1)
+                        // Dbg
+                        if ENV_PREF == "dev" {
+                            fmt.Println("Found old_price", pre)
+                        }
+                        pr.Oldprice = pre
+                    }
+                }
+            }
+        }
+        for c := node.FirstChild; c != nil; c = c.NextSibling {
+            f8(c, pr)
+        }
+    }
+
+    // Extract new_price
+    // If exist
+    f9 = func(node *html.Node, pr *Product) {
+        if node.Type == html.ElementNode && node.Data == "p" {
+            for _, a := range node.Attr {
+                if a.Key == "class" {
+                    if strings.Contains(a.Val, "new_price") {
+                        pre := renderNode(node)
+                        pre = extractContext(pre)
+                        pre = strings.Replace(pre, "&nbsp;", "", -1)
+                        pre = strings.Replace(pre, "<span class=\"star_for_discounted_price\">*</span>", "", -1)
+                        // Dbg
+                        if ENV_PREF == "dev" {
+                            fmt.Println("Found new_price", pre)
+                        }
+                        pr.Listingprice = pre
+                    }
+                }
+            }
+        }
+        for c := node.FirstChild; c != nil; c = c.NextSibling {
+            f9(c, pr)
+        }
+    }
+
+    // Extract current_price
+    // Extract new_price
+    // If exist
+    f10 = func(node *html.Node, pr *Product) {
+        if node.Type == html.ElementNode && node.Data == "strong" {
+            for _, a := range node.Attr {
+                if a.Key == "itemprop" {
+                    if strings.Contains(a.Val, "price") {
+                        pre := renderNode(node)
+                        pre = extractContext(pre)
+                        // Dbg
+                        if ENV_PREF == "dev" {
+                            fmt.Println("Found <strong itemprop=price", pre)
+                        }
+                        // Overwrite
+                        pr.Listingprice = pre
+                    }
+                }
+            }
+        }
+        for c := node.FirstChild; c != nil; c = c.NextSibling {
+            f10(c, pr)
+        }
+    }
+
     // get target pages from mongo
     coll := makeTimePrefix(LetuCollectionPages)
     if LetuDB == "" {
@@ -385,6 +476,7 @@ func Step3(glob_session *mgo.Session) {
 
     if err != nil {
         syslog.Critf("Step3 find error: %s", err)
+        fmt.Println("Step3 find error", err)
     }
 
     i = 0
@@ -393,15 +485,18 @@ func Step3(glob_session *mgo.Session) {
             Timeout: time.Second * 2200,
         }
         url_final := LetuRootUrl + v.Link
+        fmt.Println("URL:",url_final)
         pr = &Product{Price: "default", Url: url_final}
         resp, err := httpClient.Get(url_final)
         if err != nil {
             syslog.Critf("Step3 httpClient error: %s", err)
+            fmt.Println("Step3 httpClient error", err)
             continue
         }
         body, err := ioutil.ReadAll(resp.Body)
         if err != nil {
             syslog.Critf("Step3 ioutil.ReadAll error: %s", err)
+            fmt.Println("Step3 ioutil.ReadAll error", err)
         }
         doc, err_p := html.Parse(strings.NewReader(string(body)))
         if err_p != nil {
@@ -417,4 +512,5 @@ func Step3(glob_session *mgo.Session) {
     }
 
     syslog.Syslog(syslog.LOG_INFO, "Letu step3 end")
+    fmt.Println("Letu step3 end")
 }

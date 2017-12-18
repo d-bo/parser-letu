@@ -7,6 +7,7 @@ package goldapple
 import (
     "os"
     "io"
+    "fmt"
     "log"
     "time"
     "bytes"
@@ -23,6 +24,8 @@ const LetuRootUrl string = "https://www.letu.ru/"
 const LetuBrandUrl string = "https://www.letu.ru/browse/brandsDisplay.jsp"
 const LetuCollection = "letu_brands"
 const AllBrands = "all_brands"
+
+var ENV_PREF string
 
 var LetuDB string = os.Getenv("LETU_MONGO_DB")
 
@@ -54,6 +57,7 @@ func loadPage(url string) (*Page) {
     resp, err := httpClient.Get(url)
     if err != nil {
         syslog.Critf("Step1 load page error: %s", err)
+        fmt.Println("Step1 load page error", err)
         return &Page{Body: []byte{0}}
     }
     body, err := ioutil.ReadAll(resp.Body)
@@ -80,6 +84,7 @@ func extractContext(s string) string {
 		switch tt {
 			case html.ErrorToken:
                 syslog.Critf("Step1 extractContext() error: %s", z.Err())
+                fmt.Println("Step1 extractContext() error", z.Err())
 				return ""
 			case html.TextToken:
 				text := string(z.Text())
@@ -121,6 +126,7 @@ func mongoInsertBrand(b *Brand, glob_session *mgo.Session) bool {
     }
     if err != nil {
         syslog.Critf("Step1 insert brand error: %s", err)
+        fmt.Println("Step1 insert brand error", err)
     }
 
     // TODAY BRANDS DOUBLE
@@ -129,9 +135,11 @@ func mongoInsertBrand(b *Brand, glob_session *mgo.Session) bool {
     if num < 1 {
         err = c.Insert(b)
     } else {
+        // really double
     }
     if err != nil {
         syslog.Critf("Step1 insert error: %s", err)
+        fmt.Println("Step1 insert error", err)
     }
 
     if err != nil {
@@ -144,6 +152,7 @@ func mongoInsertBrand(b *Brand, glob_session *mgo.Session) bool {
 func Step1(glob_session *mgo.Session) {
 
     syslog.Syslog(syslog.LOG_INFO, "Letu step1 start")
+    fmt.Println("Letu step1 start")
 
     body := loadPage(LetuBrandUrl)
     doc, err := html.Parse(strings.NewReader(string(body.Body)))
@@ -187,4 +196,5 @@ func Step1(glob_session *mgo.Session) {
     }
     f(doc)
     syslog.Syslog(syslog.LOG_INFO, "Letu step1 end")
+    fmt.Println("Letu step1 end")
 }

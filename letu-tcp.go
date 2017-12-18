@@ -21,6 +21,7 @@ const (
 	C_TYPE = "tcp"
 )
 
+const ENV_PREF = "prod"
 const LetuBrandCollection = "letu_brands"
 
 var LetuDB string = os.Getenv("LETU_MONGO_DB")
@@ -38,7 +39,7 @@ func makeTimePrefix(coll string) string {
 
 func main() {
 
-    syslog.Openlog("letu_parser", syslog.LOG_PID, syslog.LOG_USER)
+    syslog.Openlog("letu_parser_"+ENV_PREF, syslog.LOG_PID, syslog.LOG_USER)
     syslog.Syslog(syslog.LOG_INFO, "Start LETU parser ... " + C_HOST + ":" + C_PORT)
 
 	glob_session, glob_err := mgo.Dial("mongodb://localhost:27017/")

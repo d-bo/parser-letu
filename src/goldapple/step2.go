@@ -5,6 +5,7 @@ package goldapple
  */
 
 import (
+    "fmt"
     "log"
     "time"
     "strings"
@@ -15,6 +16,8 @@ import (
     "golang.org/x/net/html"
     "github.com/blackjack/syslog"
     )
+
+var ENV_PREF string
 
 var LetuCollectionPages = "letu_pages"
 
@@ -37,6 +40,7 @@ var BrandPoolResult []Brand
 func Step2(glob_session *mgo.Session) {
 
     syslog.Syslog(syslog.LOG_INFO, "Letu step2 start")
+    fmt.Println("Letu step2 start")
 
     // html parser itself
     var f func(*html.Node, *BrandPass)
@@ -73,6 +77,7 @@ func Step2(glob_session *mgo.Session) {
 
                 if err != nil {
                     syslog.Critf("Step2 link insert error: %s", err)
+                    fmt.Println("Step2 link insert error", err)
                 }
             }
         }
@@ -103,6 +108,7 @@ func Step2(glob_session *mgo.Session) {
 
     for _, v := range results {
         url_final := LetuRootUrl+ v.Link + "&Nrpp=6000"
+        fmt.Println(url_final)
 
         if !strings.Contains(url_final, "q_brandId") {
             continue
@@ -126,12 +132,14 @@ func Step2(glob_session *mgo.Session) {
         resp, err := httpClient.Get(url_final)
         if err != nil {
             syslog.Critf("Step2 httpClient get error: %s", err)
+            fmt.Println("Step2 httpClient get error", err)
             continue
         }
 
         body, err := ioutil.ReadAll(resp.Body)
         if err != nil {
             syslog.Critf("Step2 insert error: %s", err)
+            fmt.Println("Step2 insert error", err)
         }
 
         doc, err_p := html.Parse(strings.NewReader(string(body)))
@@ -144,4 +152,5 @@ func Step2(glob_session *mgo.Session) {
     }
 
     syslog.Syslog(syslog.LOG_INFO, "Letu step2 end")
+    fmt.Println("Letu step2 end")
 }
