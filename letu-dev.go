@@ -39,7 +39,7 @@ func main() {
     // Inject variable to goldapple pkg
     goldapple.ENV_PREF = ENV_PREF
 
-    syslog.Openlog("letu_parser"+ENV_PREF, syslog.LOG_PID, syslog.LOG_USER)
+    syslog.Openlog("letu_parser_"+ENV_PREF, syslog.LOG_PID, syslog.LOG_USER)
     syslog.Syslog(syslog.LOG_INFO, "Start LETU parser ... " + C_HOST + ":" + C_PORT)
 
     session, err := mgo.Dial("mongodb://localhost:27017/")
