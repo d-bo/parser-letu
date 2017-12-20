@@ -17,8 +17,6 @@ import (
     "github.com/blackjack/syslog"
     )
 
-var ENV_PREF string
-
 var LetuCollectionPages = "letu_pages"
 
 type BrandPass struct {

@@ -19,8 +19,6 @@ import (
     "github.com/blackjack/syslog"
     )
 
-var ENV_PREF string
-
 const (
     LetuProducts = "letu_products_final"
     LetuPrice = "letu_price"
