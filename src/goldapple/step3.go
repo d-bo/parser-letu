@@ -158,6 +158,9 @@ func Step3(glob_session *mgo.Session) {
             f3(node, pr)    // article
             f4(node, pr)    // name
             f5(node, pr)    // desc
+            f8(node, pr)    // old price
+            f9(node, pr)    // new price
+            f10(node, pr)   // new price double check
 
             if pr.Price != "default" {
                 if LetuDB == "" {
@@ -423,7 +426,9 @@ func Step3(glob_session *mgo.Session) {
                         pre := renderNode(node)
                         pre = extractContext(pre)
                         pre = strings.Replace(pre, "&nbsp;", "", -1)
+                        pre = strings.Replace(pre, "\n", "", -1)
                         pre = strings.Replace(pre, "<span class=\"star_for_discounted_price\">*</span>", "", -1)
+                        pre = strings.TrimLeft(pre, " ")
                         // Dbg
                         if ENV_PREF == "dev" {
                             fmt.Println("Found new_price", pre)
@@ -501,8 +506,9 @@ func Step3(glob_session *mgo.Session) {
             log.Println(err)
         }
         br := &BrandSingle{Name: v.Brand}
-        // find product image
-        // just before as all the text context
+
+        // Find product image
+        // Just before as all the text context
         f6(doc, pr)
         f7(doc, pr)
         f(doc, pr, br)
