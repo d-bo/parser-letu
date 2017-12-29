@@ -55,6 +55,7 @@ type Product struct {
     Gestori string `json:"gestori,omitempty" bson:"gestori,omitempty"`
     Brand string
     Listingprice string
+    Discountprice string
     Oldprice string
     Volume string
     Url string
@@ -69,7 +70,8 @@ type ProductFinal struct {
     Gestori string `json:"gestori,omitempty" bson:"gestori,omitempty"`
     Brand string
     Listingprice string
-    Oldeprice string
+    Discountprice string
+    Oldprice string
     Volume string
     Url string
 }
@@ -131,6 +133,7 @@ func Step3(glob_session *mgo.Session) {
     var f8 func(*html.Node, *Product)
     var f9 func(*html.Node, *Product)
     var f10 func(*html.Node, *Product)
+    var f11 func(*html.Node, *Product)
 
 
 
@@ -465,6 +468,27 @@ func Step3(glob_session *mgo.Session) {
         }
         for c := node.FirstChild; c != nil; c = c.NextSibling {
             f10(c, pr)
+        }
+    }
+
+    f11 = func(node *html.Node, pr *Product) {
+        if node.Type == html.ElementNode && node.Data == "span" {
+            for _, a := range node.Attr {
+                if a.Key == "class" {
+                    if strings.Contains(a.Val, "star_for_discounted_price") {
+                        pre := renderNode(node)
+                        pre = extractContext(pre)
+                        pre = strings.Replace(pre, "(", "", -1)
+                        pre = strings.Replace(pre, ")", "", -1)
+                        pre = strings.Replace(pre, "*", "", -1)
+                        // Overwrite
+                        pr.Discountprice = pre
+                    }
+                }
+            }
+        }
+        for c := node.FirstChild; c != nil; c = c.NextSibling {
+            f11(c, pr)
         }
     }
 

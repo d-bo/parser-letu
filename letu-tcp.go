@@ -118,7 +118,6 @@ func handleRequest(conn net.Conn, session *mgo.Session) {
 		case "start":
 			if num > 1 {
 				syslog.Syslog(syslog.LOG_INFO, "LETU allready started")
-				os.Exit(0)
 			}
 			goldapple.Step1(session)
 			goldapple.Step2(session)
