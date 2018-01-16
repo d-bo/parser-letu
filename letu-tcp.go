@@ -45,7 +45,7 @@ func main() {
     syslog.Openlog("letu_parser_"+ENV_PREF, syslog.LOG_PID, syslog.LOG_USER)
     syslog.Syslog(syslog.LOG_INFO, "Start LETU parser ... " + C_HOST + ":" + C_PORT)
 
-	glob_session, glob_err := mgo.Dial("mongodb://localhost:27017/")
+	glob_session, glob_err := mgo.Dial("mongodb://apidev:apidev@localhost:27017/parser")
 	if glob_err != nil {
 		fmt.Println("Mongo connection error: ", glob_err)
 	}
