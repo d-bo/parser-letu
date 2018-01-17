@@ -27,6 +27,9 @@ const (
     LogCollection = "Log"
 )
 
+// Breadcrumbs
+var Navi []string
+
 type LogStruct struct {
     Subject string
     Action string
@@ -59,6 +62,7 @@ type Product struct {
     Oldprice string
     Volume string
     Url string
+    Navi []string
 }
 
 // ProductFinal
@@ -74,6 +78,8 @@ type ProductFinal struct {
     Oldprice string
     Volume string
     Url string
+    LastUpdate string
+    Navi string    // Joined Product.Navi
 }
 
 // struct for ILDE_price
@@ -83,6 +89,7 @@ type ProductPrice struct {
     Oldprice string
     Articul string
     Brand string
+    Date string
 }
 
 type Gestori struct {
@@ -134,6 +141,8 @@ func Step3(glob_session *mgo.Session) {
     var f9 func(*html.Node, *Product)
     var f10 func(*html.Node, *Product)
     var f11 func(*html.Node, *Product)
+    var f12 func(*html.Node, *Product)    // Navigation
+    var f13 func(*html.Node, *Product)    // Navi href extract
 
 
 
@@ -187,7 +196,11 @@ func Step3(glob_session *mgo.Session) {
                     Price_discount: pr.Price_discount,
                     Articul: pr.Articul,
                     Brand: br.Name,
+                    Oldprice: pr.Oldprice,
+                    Date: makeTimePrefix(""),
                 }
+
+                fmt.Println(strings.Join(pr.Navi, ";"))
 
                 if num < 1 {
                     fmt.Println("New:", pr.Articul)
@@ -209,6 +222,8 @@ func Step3(glob_session *mgo.Session) {
                         Listingprice: pr.Price,
                         Volume: pr.Volume,
                         Url: pr.Url,
+                        Navi: strings.Join(pr.Navi, ";"),
+                        LastUpdate: makeTimePrefix(""),
                     }
                     // Insert 'letu_products_final'
                     err := c.Insert(new)
@@ -240,11 +255,13 @@ func Step3(glob_session *mgo.Session) {
                         Update: bson.M{
                             "$set": bson.M{
                                 "listingprice": pr.Price,
+                                "oldprice": pr.Oldprice,
                                 // as of fixed 24.10.17
                                 "desc": pr.Desc,
                                 "volume": pr.Volume,
                                 "img": pr.Img,
                                 "url": pr.Url,
+                                "LastUpdate": makeTimePrefix(""),
                             },
                         },
                         ReturnNew: true,
@@ -434,9 +451,9 @@ func Step3(glob_session *mgo.Session) {
                         pre = strings.TrimLeft(pre, " ")
                         // Dbg
                         if ENV_PREF == "dev" {
-                            fmt.Println("Found new_price", pre)
+                            fmt.Println("Found new_price (discount)", pre)
                         }
-                        pr.Listingprice = pre
+                        pr.Price_discount = pre
                     }
                 }
             }
@@ -461,7 +478,7 @@ func Step3(glob_session *mgo.Session) {
                             fmt.Println("Found <strong itemprop=price", pre)
                         }
                         // Overwrite
-                        pr.Listingprice = pre
+                        pr.Price = pre
                     }
                 }
             }
@@ -489,6 +506,38 @@ func Step3(glob_session *mgo.Session) {
         }
         for c := node.FirstChild; c != nil; c = c.NextSibling {
             f11(c, pr)
+        }
+    }
+
+    // Extract navigation tree
+    f12 = func(node *html.Node, pr *Product) {
+        if node.Type == html.ElementNode && node.Data == "div" {
+            for _, a := range node.Attr {
+                if a.Key == "class" {
+                    if strings.Contains(a.Val, "breadcrumbs") {
+                        f13(node, pr)
+                    }
+                }
+            }
+        }
+        for c := node.FirstChild; c != nil; c = c.NextSibling {
+            f12(c, pr)
+        }
+    }
+
+    // Extract href tags
+    f13 = func(node *html.Node, pr *Product) {
+        if node.Type == html.ElementNode && node.Data == "a" {
+            for _, a := range node.Attr {
+                if a.Key == "href" {
+                    pre := renderNode(node)
+                    pre = extractContext(pre)
+                    pr.Navi = append(pr.Navi, pre)
+                }
+            }
+        }
+        for c := node.FirstChild; c != nil; c = c.NextSibling {
+            f13(c, pr)
         }
     }
 
@@ -535,6 +584,8 @@ func Step3(glob_session *mgo.Session) {
         // Just before as all the text context
         f6(doc, pr)
         f7(doc, pr)
+        f11(doc, pr)   // Discount price
+        f12(doc, pr)   // Navigation
         f(doc, pr, br)
         i++
     }
