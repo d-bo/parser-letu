@@ -191,6 +191,9 @@ func Step3(glob_session *mgo.Session) {
                     fmt.Println("Step3 count double zero err", err)
                 }
 
+                pr.Price = strings.Trim(pr.Price)
+                pr.Price_discount = strings.Trim(pr.Price_discount)
+
                 price := ProductPrice{
                     Price: pr.Price,
                     Price_discount: pr.Price_discount,
@@ -204,6 +207,7 @@ func Step3(glob_session *mgo.Session) {
 
                 if num < 1 {
                     fmt.Println("New:", pr.Articul)
+                    
                     /*
                     Name string
                     Articul string
@@ -220,6 +224,7 @@ func Step3(glob_session *mgo.Session) {
                         Gestori: pr.Gestori,
                         Brand: br.Name,
                         Listingprice: pr.Price,
+                        Oldprice: pr.Oldprice,
                         Volume: pr.Volume,
                         Url: pr.Url,
                         Navi: strings.Join(pr.Navi, ";"),
@@ -261,6 +266,7 @@ func Step3(glob_session *mgo.Session) {
                                 "volume": pr.Volume,
                                 "img": pr.Img,
                                 "url": pr.Url,
+                                "Navi": strings.Join(pr.Navi, ";"),
                                 "LastUpdate": makeTimePrefix(""),
                             },
                         },
@@ -561,7 +567,7 @@ func Step3(glob_session *mgo.Session) {
             Timeout: time.Second * 2200,
         }
         url_final := LetuRootUrl + v.Link
-        fmt.Println("URL:",url_final)
+        fmt.Println("URL:", url_final)
         pr = &Product{Price: "default", Url: url_final}
         resp, err := httpClient.Get(url_final)
         if err != nil {
