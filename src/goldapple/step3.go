@@ -191,8 +191,8 @@ func Step3(glob_session *mgo.Session) {
                     fmt.Println("Step3 count double zero err", err)
                 }
 
-                pr.Price = strings.Trim(pr.Price)
-                pr.Price_discount = strings.Trim(pr.Price_discount)
+                pr.Price = strings.Trim(pr.Price, " ")
+                pr.Price_discount = strings.Trim(pr.Price_discount, " ")
 
                 price := ProductPrice{
                     Price: pr.Price,
@@ -207,7 +207,7 @@ func Step3(glob_session *mgo.Session) {
 
                 if num < 1 {
                     fmt.Println("New:", pr.Articul)
-                    
+
                     /*
                     Name string
                     Articul string
