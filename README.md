@@ -23,3 +23,16 @@ crontab -e
 
 00 11 * * * echo -n "start"|netcat 127.0.0.1 8800
 ```
+
+### Docker
+
+```bash
+# Start
+cd parser-letu
+sudo docker build -t ga/parser-letu .
+# !!! network host -> localhost MongoDB
+sudo docker run --network host -d --restart always --log-driver syslog ga/parser-letu:latest
+# Stop
+sudo docker ps
+sudo docker kill <image_name>
+```

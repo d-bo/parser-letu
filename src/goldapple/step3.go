@@ -101,7 +101,7 @@ type Gestori struct {
 }
 
 func Log(msg []byte) {
-    f, err := os.OpenFile("log/"+makeTimePrefix(LogFile), os.O_RDWR|os.O_APPEND|os.O_CREATE, 0775)
+    f, err := os.OpenFile("log/"+MakeTimePrefix(LogFile), os.O_RDWR|os.O_APPEND|os.O_CREATE, 0775)
     defer f.Close()
     if err != nil {
         syslog.Critf("Step3 openfile error: %s", err)
@@ -112,13 +112,6 @@ func Log(msg []byte) {
     if err == nil && n < len(bytemsg) {
         syslog.Critf("Step3 logwrite error: %s", io.ErrShortWrite)
     }
-}
-
-func makeTimeMonthlyPrefix(coll string) string {
-    t := time.Now()
-    ti := t.Format("01-2006")
-    fin := ti + "_" + coll
-    return fin
 }
 
 func Step3(glob_session *mgo.Session) {
@@ -180,7 +173,7 @@ func Step3(glob_session *mgo.Session) {
                 }
 
                 c := glob_session.DB(LetuDB).C(LetuProducts)
-                d := glob_session.DB(LetuDB).C(makeTimeMonthlyPrefix(LetuPrice))
+                d := glob_session.DB(LetuDB).C(MakeTimeMonthlyPrefix(LetuPrice))
                 e := glob_session.DB(LetuDB).C(LogCollection)
                 glob_session.SetMode(mgo.Monotonic, true)
 
@@ -200,7 +193,7 @@ func Step3(glob_session *mgo.Session) {
                     Articul: pr.Articul,
                     Brand: br.Name,
                     Oldprice: pr.Oldprice,
-                    Date: makeTimePrefix(""),
+                    Date: MakeTimePrefix(""),
                 }
 
                 fmt.Println(strings.Join(pr.Navi, ";"))
@@ -228,7 +221,7 @@ func Step3(glob_session *mgo.Session) {
                         Volume: pr.Volume,
                         Url: pr.Url,
                         Navi: strings.Join(pr.Navi, ";"),
-                        LastUpdate: makeTimePrefix(""),
+                        LastUpdate: MakeTimePrefix(""),
                     }
                     // Insert 'letu_products_final'
                     err := c.Insert(new)
@@ -250,7 +243,7 @@ func Step3(glob_session *mgo.Session) {
                         Subject: "letu",
                         Action: "new_articul",
                         Val: pr.Articul,
-                        Date: makeTimePrefix(""),
+                        Date: MakeTimePrefix(""),
                     })
                 } else {
                     fmt.Println("DOUBLE:", pr.Articul)
@@ -267,7 +260,7 @@ func Step3(glob_session *mgo.Session) {
                                 "img": pr.Img,
                                 "url": pr.Url,
                                 "Navi": strings.Join(pr.Navi, ";"),
-                                "LastUpdate": makeTimePrefix(""),
+                                "LastUpdate": MakeTimePrefix(""),
                             },
                         },
                         ReturnNew: true,
@@ -548,7 +541,7 @@ func Step3(glob_session *mgo.Session) {
     }
 
     // get target pages from mongo
-    coll := makeTimePrefix(LetuCollectionPages)
+    coll := MakeTimePrefix(LetuCollectionPages)
     if LetuDB == "" {
         LetuDB = "parser"
     }

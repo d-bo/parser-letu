@@ -6,35 +6,20 @@ package main
 import (
     "os"
     "fmt"
-    "time"
     "goldapple"
     "gopkg.in/mgo.v2"
     "github.com/blackjack/syslog"
 )
 
-const (
-    C_HOST = "0.0.0.0"
-    C_PORT = "8800"
-    C_TYPE = "tcp"
-    LetuBrandCollection = "letu_brands"
-)
-
-var ENV_PREF = "dev"
-var LetuDB string = os.Getenv("LETU_MONGO_DB")
-
-// A time prefix before collection name
-func makeTimePrefix(coll string) string {
-    t := time.Now()
-    ti := t.Format("02-01-2006")
-    if coll == "" {
-        return ti
-    }
-    fin := ti + "_" + coll
-    return fin
-}
-
 // goroutine handler
-func main() {
+func _main() {
+
+    var C_HOST = "0.0.0.0"
+    var C_PORT = "8800"
+    var LetuBrandCollection = "letu_brands"
+
+    var ENV_PREF = "dev"
+    var LetuDB string = os.Getenv("LETU_MONGO_DB")
 
     // Inject variable to goldapple pkg
     goldapple.ENV_PREF = ENV_PREF
@@ -50,7 +35,7 @@ func main() {
         os.Exit(1)
     }
 
-    coll := makeTimePrefix(LetuBrandCollection)
+    coll := goldapple.MakeTimePrefix(LetuBrandCollection)
     if LetuDB == "" {
         LetuDB = "parser"
     }

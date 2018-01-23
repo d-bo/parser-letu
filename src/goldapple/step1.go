@@ -93,20 +93,9 @@ func extractContext(s string) string {
 	}
 }
 
-// A time prefix before collection name
-func makeTimePrefix(coll string) string {
-    t := time.Now()
-    ti := t.Format("02-01-2006")
-    if coll == "" {
-        return ti
-    }
-    fin := ti + "_" + coll
-    return fin
-}
-
 // Insert document to mongo brands collection
 func mongoInsertBrand(b *Brand, glob_session *mgo.Session) bool {
-    coll := makeTimePrefix(LetuCollection)
+    coll := MakeTimePrefix(LetuCollection)
     coll_all := AllBrands
     if LetuDB == "" {
         LetuDB = "parser"

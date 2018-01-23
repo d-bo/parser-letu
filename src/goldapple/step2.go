@@ -65,7 +65,7 @@ func Step2(glob_session *mgo.Session) {
                     b,
                 )
 
-                coll := makeTimePrefix(LetuCollectionPages)
+                coll := MakeTimePrefix(LetuCollectionPages)
                 if LetuDB == "" {
                     LetuDB = "parser"
                 }
@@ -92,7 +92,7 @@ func Step2(glob_session *mgo.Session) {
     if LetuDB == "" {
         LetuDB = "parser"
     }
-    coll := makeTimePrefix(LetuCollection)
+    coll := MakeTimePrefix(LetuCollection)
     c := glob_session.DB(LetuDB).C(coll)
     glob_session.SetMode(mgo.Monotonic, true)
     err := c.Find(bson.M{}).All(&results)

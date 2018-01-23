@@ -7,7 +7,6 @@ import (
 	"os"
     "net"
 	"fmt"
-    "time"
 	"syscall"
 	"os/signal"
 	"goldapple"
@@ -25,17 +24,6 @@ const ENV_PREF = "prod"
 const LetuBrandCollection = "letu_brands"
 
 var LetuDB string = os.Getenv("LETU_MONGO_DB")
-
-// A time prefix before collection name
-func makeTimePrefix(coll string) string {
-    t := time.Now()
-    ti := t.Format("02-01-2006")
-    if coll == "" {
-        return ti
-    }
-    fin := ti + "_" + coll
-    return fin
-}
 
 func main() {
 
@@ -102,7 +90,7 @@ func handleRequest(conn net.Conn, session *mgo.Session) {
 	}
 	str := string(buf[:len])
 
-	coll := makeTimePrefix(LetuBrandCollection)
+	coll := goldapple.MakeTimePrefix(LetuBrandCollection)
 	if LetuDB == "" {
 		LetuDB = "parser"
 	}
