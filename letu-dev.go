@@ -12,7 +12,7 @@ import (
 )
 
 // goroutine handler
-func _main() {
+func main() {
 
     var C_HOST = "0.0.0.0"
     var C_PORT = "8800"
@@ -49,7 +49,8 @@ func _main() {
         fmt.Println("Today allready parsed count:", num)
     }
 
+    goldapple.Chanel(session)
     //goldapple.Step1(session)
     //goldapple.Step2(session)
-    goldapple.Step3(session)
+    //goldapple.Step3(session)
 }

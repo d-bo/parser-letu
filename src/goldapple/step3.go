@@ -19,30 +19,6 @@ import (
     "github.com/blackjack/syslog"
     )
 
-const (
-    LetuProducts = "letu_products_final"
-    LetuPrice = "letu_price"
-    GestoriDB = "gestori"
-    LogFile = "Log"
-    LogCollection = "Log"
-)
-
-// Breadcrumbs
-var Navi []string
-
-type LogStruct struct {
-    Subject string
-    Action string
-    Val string
-    Date string
-}
-
-type Counter struct {
-    count_double int
-    count_new int
-    count_gestori_match int
-}
-
 type BrandSingle struct {
     Name string
 }
