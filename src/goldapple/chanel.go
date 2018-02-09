@@ -70,7 +70,7 @@ func Chanel(glob_session *mgo.Session) {
                         churl = strings.Replace(a.Val, "location=", "", -1)
                         churl = strings.Replace(churl, "'", "", -1)
                         churl = letu_root + churl
-                        fmt.Println(churl)
+                        //fmt.Println(churl)
                         chanelUrls = append(chanelUrls, churl)
                     }
                 }
@@ -88,8 +88,8 @@ func Chanel(glob_session *mgo.Session) {
             for _, a := range node.Attr {
                 if a.Key == "href" {
                     if strings.Contains(a.Val, "push") {
-                        //fmt.Println(a.Val)
                         //f1()
+                        fmt.Println(a.Val)
                         chanelUrls = append(chanelUrls, churl)
                     }
                 }
@@ -138,11 +138,25 @@ func Chanel(glob_session *mgo.Session) {
     br := &BrandSingle{Name: "CHANEL"}
 
     f(doc, pr, br)
-    f1(doc)
+    //f1(doc)
 
     i := 0
     for i < len(chanelUrls) {
-        fmt.Println(chanelUrls[i])
+        resp, err := httpClient.Get(chanelUrls[i])
+        if err != nil {
+            syslog.Critf("Chanel httpClient error: %s", err)
+            fmt.Println("Chanel httpClient error", err)
+        }
+        body, err := ioutil.ReadAll(resp.Body)
+        if err != nil {
+            syslog.Critf("Step3 ioutil.ReadAll error: %s", err)
+            fmt.Println("Step3 ioutil.ReadAll error", err)
+        }
+        doc, err_p := html.Parse(strings.NewReader(string(body)))
+        if err_p != nil {
+            log.Println(err)
+        }
+        f1(doc)
         i++
     }
     //fmt.Println(chanelUrls)
