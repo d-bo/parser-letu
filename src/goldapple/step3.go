@@ -28,6 +28,7 @@ type Product struct {
     Price string
     Price_discount string
     Name string
+    Name_e string
     Articul string
     Desc string
     Img string
@@ -44,6 +45,7 @@ type Product struct {
 // ProductFinal
 type ProductFinal struct {
     Name string
+    Name_e string
     Articul string
     Desc string
     Img string
