@@ -230,7 +230,9 @@ func Step3(glob_session *mgo.Session) {
                     change := mgo.Change{
                         Update: bson.M{
                             "$set": bson.M{
+                                "articul": pr.Articul,
                                 "listingprice": pr.Price,
+                                "name": pr.Name,
                                 "oldprice": pr.Oldprice,
                                 // as of fixed 24.10.17
                                 "desc": pr.Desc,

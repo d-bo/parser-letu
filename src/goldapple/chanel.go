@@ -137,6 +137,26 @@ func Chanel(glob_session *mgo.Session) {
 
         if node.Type == html.ElementNode && node.Data == "div" {
             for _, a := range node.Attr {
+                if a.Key == "itemprop" {
+                    if strings.Contains(a.Val, "description") {
+                        contents := renderNode(node)
+                        contents = strings.Replace(contents, "<div itemprop=\"description\" class=\"productDecsrip\">", "", -1)
+                        contents = strings.Replace(contents, "</div>", "", -1)
+                        contents = strings.Replace(contents, "<span>", "", -1)
+                        contents = strings.Replace(contents, "</span>", "", -1)
+                        contents = strings.Replace(contents, "<br/>", "", -1)
+                        contents = strings.Replace(contents, "\n", "", -1)
+                        contents = strings.Replace(contents, "\t", "", -1)
+                        contents = strings.TrimSpace(contents)
+                        pr.Desc = contents
+                        fmt.Println("found DESC", contents)
+                    }
+                }
+            }
+        }
+
+        if node.Type == html.ElementNode && node.Data == "div" {
+            for _, a := range node.Attr {
                 if a.Key == "class" {
                     if strings.Contains(a.Val, "breadcrumbs") {
                         f13(node, pr)
@@ -144,6 +164,7 @@ func Chanel(glob_session *mgo.Session) {
                 }
             }
         }
+
         if node.Type == html.ElementNode && node.Data == "img" {
             for _, a := range node.Attr {
                 if a.Key == "src" {
@@ -247,8 +268,11 @@ func Chanel(glob_session *mgo.Session) {
                     change := mgo.Change{
                         Update: bson.M{
                             "$set": bson.M{
-                                "listingprice": pr.Price,
-                                "Name_e": pr.Name_e,
+                                "articul": pr.Articul,
+                                "listingprice": pr.Listingprice,
+                                "name": pr.Name,
+                                "name_e": pr.Name_e,
+                                "brand": "CHANEL",
                                 // as of fixed 24.10.17
                                 "desc": pr.Desc,
                                 "img": pr.Img,
@@ -302,18 +326,6 @@ func Chanel(glob_session *mgo.Session) {
                         contents := renderNode(node)
                         contents = extractContext(contents)
                         pr.Name_e = contents
-                        //fmt.Println(pr.Desc)
-                    }
-                }
-            }
-        }
-        if node.Type == html.ElementNode && node.Data == "div" {
-            for _, a := range node.Attr {
-                if a.Key == "class" {
-                    if strings.Contains(a.Val, "productDecsrip") {
-                        contents := renderNode(node)
-                        contents = extractContext(contents)
-                        pr.Desc = contents
                         //fmt.Println(pr.Desc)
                     }
                 }

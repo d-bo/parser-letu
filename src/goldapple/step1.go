@@ -85,7 +85,7 @@ func extractContext(s string) string {
 			case html.ErrorToken:
                 syslog.Critf("Step1 extractContext() error: %s", z.Err())
                 fmt.Println("Step1 extractContext() error", z.Err())
-				return ""
+				return "Step1 extractContext() error"
 			case html.TextToken:
 				text := string(z.Text())
 				return text
