@@ -1,7 +1,7 @@
 package goldapple
 
 /**
- * Step3: collect product data
+ * Chanel brand: collect product data
  */
 
 import (
@@ -56,8 +56,8 @@ var httpClient = &http.Client{
 
 func Chanel(glob_session *mgo.Session) {
 
-    syslog.Syslog(syslog.LOG_INFO, "Letu step3 start")
-    fmt.Println("Letu step3 start")
+    syslog.Syslog(syslog.LOG_INFO, "Letu chanel start")
+    fmt.Println("Letu chanel start")
 
     var pr *Product
     var results []Link
@@ -102,13 +102,13 @@ func Chanel(glob_session *mgo.Session) {
                             pr.Url = "https://www.letu.ru"+a.Val
                             resp, err := httpClient.Get(pr.Url)
                             if err != nil {
-                                syslog.Critf("Chanel httpClient error: %s", err)
-                                fmt.Println("Chanel httpClient error", err)
+                                syslog.Critf("LETU chanel httpClient error: %s", err)
+                                fmt.Println("LETU chanel httpClient error", err)
                             }
                             body, err := ioutil.ReadAll(resp.Body)
                             if err != nil {
-                                syslog.Critf("Step3 ioutil.ReadAll error: %s", err)
-                                fmt.Println("Step3 ioutil.ReadAll error", err)
+                                syslog.Critf("LETU chanel ioutil.ReadAll error: %s", err)
+                                fmt.Println("LETU chanel ioutil.ReadAll error", err)
                             }
                             doc, err_p := html.Parse(strings.NewReader(string(body)))
                             if err_p != nil {
@@ -392,8 +392,8 @@ func Chanel(glob_session *mgo.Session) {
     err := c.Find(bson.M{}).All(&results)
 
     if err != nil {
-        syslog.Critf("Step3 find error: %s", err)
-        fmt.Println("Step3 find error", err)
+        syslog.Critf("LETU chanel find error: %s", err)
+        fmt.Println("LETU chanel find error", err)
     }
 
     url_final := "https://www.letu.ru/chanel/"
@@ -405,8 +405,8 @@ func Chanel(glob_session *mgo.Session) {
     }
     body, err := ioutil.ReadAll(resp.Body)
     if err != nil {
-        syslog.Critf("Step3 ioutil.ReadAll error: %s", err)
-        fmt.Println("Step3 ioutil.ReadAll error", err)
+        syslog.Critf("LETU chanel ioutil.ReadAll error: %s", err)
+        fmt.Println("LETU chanel ioutil.ReadAll error", err)
     }
     doc, err_p := html.Parse(strings.NewReader(string(body)))
     if err_p != nil {
@@ -426,8 +426,8 @@ func Chanel(glob_session *mgo.Session) {
         }
         body, err := ioutil.ReadAll(resp.Body)
         if err != nil {
-            syslog.Critf("Step3 ioutil.ReadAll error: %s", err)
-            fmt.Println("Step3 ioutil.ReadAll error", err)
+            syslog.Critf("LETU chanel ioutil.ReadAll error: %s", err)
+            fmt.Println("LETU chanel ioutil.ReadAll error", err)
         }
         doc, err_p := html.Parse(strings.NewReader(string(body)))
         if err_p != nil {
