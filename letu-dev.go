@@ -12,7 +12,7 @@ import (
 )
 
 // goroutine handler
-func main() {
+func _main() {
 
     var C_HOST = "0.0.0.0"
     var C_PORT = "8800"

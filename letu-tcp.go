@@ -25,7 +25,7 @@ const LetuBrandCollection = "letu_brands"
 
 var LetuDB string = os.Getenv("LETU_MONGO_DB")
 
-func main() {
+func _main() {
 
     // Inject variable to goldapple pkg
     goldapple.ENV_PREF = ENV_PREF
