@@ -11,7 +11,7 @@ import (
 
 const (
     C_HOST = "0.0.0.0"
-    C_PORT = "8802"
+    C_PORT = "8800"
     C_TYPE = "tcp"
 )
 
@@ -75,10 +75,15 @@ func main() {
     })
 
     // Parse single product page
-    r.GET("/ping", func(c *gin.Context) {
+    r.GET("/v1/ping", func(c *gin.Context) {
         c.JSON(200, gin.H{
             "message": "pong",
         })
+    })
+
+    // Parse single product page
+    r.GET("/", func(c *gin.Context) {
+        c.String(200, "GA")
     })
 
     r.Run(":"+C_PORT)
