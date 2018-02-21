@@ -27,6 +27,7 @@ func main() {
     // Start parser
     r.GET("/v1/start", func(c *gin.Context) {
 
+        // Mongo connection
         session, glob_err := mgo.Dial("mongodb://apidev:apidev@localhost:27017/parser")
 
         if glob_err != nil {
