@@ -14,18 +14,11 @@ import (
 	"github.com/blackjack/syslog"
 )
 
-const (
-	C_HOST = "0.0.0.0"
-	C_PORT = "8800"
-	C_TYPE = "tcp"
-)
-
-const ENV_PREF = "prod"
 const LetuBrandCollection = "letu_brands"
 
 var LetuDB string = os.Getenv("LETU_MONGO_DB")
 
-func _main() {
+func __main() {
 
     // Inject variable to goldapple pkg
     goldapple.ENV_PREF = ENV_PREF

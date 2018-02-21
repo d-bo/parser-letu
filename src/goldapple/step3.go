@@ -78,20 +78,6 @@ type Gestori struct {
     Barcod string
 }
 
-func Log(msg []byte) {
-    f, err := os.OpenFile("log/"+MakeTimePrefix(LogFile), os.O_RDWR|os.O_APPEND|os.O_CREATE, 0775)
-    defer f.Close()
-    if err != nil {
-        syslog.Critf("Step3 openfile error: %s", err)
-        fmt.Println("Step3 openfile error", err)
-    }
-    bytemsg := []byte(msg)
-    n, err := f.Write(bytemsg)
-    if err == nil && n < len(bytemsg) {
-        syslog.Critf("Step3 logwrite error: %s", io.ErrShortWrite)
-    }
-}
-
 func Step3(glob_session *mgo.Session) {
 
     syslog.Syslog(syslog.LOG_INFO, "Letu step3 start")
