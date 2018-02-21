@@ -5,8 +5,6 @@ package goldapple
  */
 
 import (
-    "os"
-    "io"
     "fmt"
     "log"
     "time"
