@@ -31,7 +31,7 @@ crontab -e
 cd parser-letu
 sudo docker build -t ga/parser-letu .
 # !!! network host -> localhost MongoDB
-sudo docker run --network host -d --restart always --log-driver syslog ga/parser-letu:latest
+sudo docker run --network host -d --restart always --log-driver syslog gapple/parser-letu:latest
 # Stop
 sudo docker ps
 sudo docker kill <image_name>
