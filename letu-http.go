@@ -59,10 +59,10 @@ func main() {
             c.JSON(200, gin.H{
                 "message": "r.GET(\"/start\", func(c *gin.Context)",
             })
-            goldapple.Chanel(session)
             goldapple.Step1(session)
             goldapple.Step2(session)
             goldapple.Step3(session)
+            goldapple.Chanel(session)
         }
 
         session.Close()
