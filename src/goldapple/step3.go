@@ -181,6 +181,7 @@ func Step3(glob_session *mgo.Session) {
                         Listingprice: pr.Price,
                         Oldprice: pr.Oldprice,
                         Volume: pr.Volume,
+                        Discountprice: pr.Price_discount,
                         Url: pr.Url,
                         Navi: strings.Join(pr.Navi, ";"),
                         LastUpdate: MakeTimePrefix(""),
@@ -216,6 +217,7 @@ func Step3(glob_session *mgo.Session) {
                             "$set": bson.M{
                                 "articul": pr.Articul,
                                 "listingprice": pr.Price,
+                                "discountprice": pr.Price_discount,
                                 "name": pr.Name,
                                 "oldprice": pr.Oldprice,
                                 // as of fixed 24.10.17
@@ -407,14 +409,22 @@ func Step3(glob_session *mgo.Session) {
                 if a.Key == "class" {
                     if strings.Contains(a.Val, "new_price") {
                         pre := renderNode(node)
-                        pre = extractContext(pre)
+                        //pre = extractContext(pre)
+                        pre = strings.Replace(pre, `<p class="new_price">`, "", -1)
                         pre = strings.Replace(pre, "&nbsp;", "", -1)
                         pre = strings.Replace(pre, "\n", "", -1)
-                        pre = strings.Replace(pre, "<span class=\"star_for_discounted_price\">*</span>", "", -1)
+                        pre = strings.Replace(pre, "(", "", -1)
+                        pre = strings.Replace(pre, ")", "", -1)
+                        pre = strings.Replace(pre, "</p>", "", -1)
+                        pre = strings.Replace(pre, "*", "", -1)
+                        pre = strings.Replace(pre, "\t", "", -1)
+                        pre = strings.Replace(pre, `<span class="star_for_discounted_price">`, "", -1)
+                        pre = strings.Replace(pre, "</span>", "", -1)
                         pre = strings.TrimLeft(pre, " ")
+                        pre = strings.TrimRight(pre, " ")
                         // Dbg
                         if ENV_PREF == "dev" {
-                            fmt.Println("Found new_price (discount)", pre)
+                            fmt.Println("Found new_price (star_for_discounted_price): ", pre)
                         }
                         pr.Price_discount = pre
                     }

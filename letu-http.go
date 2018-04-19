@@ -20,7 +20,7 @@ const BrandCollection = "letu_brands"
 
 var DB string = os.Getenv("LETU_MONGO_DB")
 
-func main() {
+func _main() {
 
     r := gin.Default()
 
