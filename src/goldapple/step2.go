@@ -106,7 +106,6 @@ func Step2(glob_session *mgo.Session) {
 
     for _, v := range results {
         url_final := LetuRootUrl+ v.Link + "&Nrpp=6000"
-        fmt.Println(url_final)
 
         if !strings.Contains(url_final, "q_brandId") {
             continue
@@ -114,13 +113,15 @@ func Step2(glob_session *mgo.Session) {
             // uncomment this if you want to start from target brand
             /*
             if match_flag == 0 {
-                if strings.Contains(v.Link, "/browse/brandProducts.jsp?q_brandId=192001&N=4146502249") {
+                if strings.Contains(v.Link, "/browse/brandProducts.jsp?q_brandId=27003&N=3113300824") {
                     match_flag = 1
+                    fmt.Println(url_final)
                 } else {
                     continue
                 }
             }
             */
+            
         }
 
         var httpClient = &http.Client{

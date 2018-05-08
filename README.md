@@ -36,3 +36,107 @@ sudo docker run --network host -d --restart always --log-driver syslog gapple/pa
 sudo docker ps
 sudo docker kill <image_name>
 ```
+
+```bash
+
+db['ILDE_products_final'].aggregate([
+    {
+        $match: {
+        	gestori: {
+            	$gt: ""
+        	}
+        }
+    },
+	{
+		$lookup: {
+			from: "gestori_up",
+			localField: "gestori",
+			foreignField: "Cod_good",
+			as: "sku"
+		}
+	},
+	{
+		$out: "gestori_export"
+	}
+])
+
+db['ILDE_products_final'].aggregate([
+    {
+        $match: {
+        	gestori: {
+            	$gt: ""
+        	}
+        }
+    },
+    {
+        $match: {
+        	gestori: {
+            	$ne: ""
+        	}
+        }
+    },
+	{
+		$lookup: {
+			from: "gestori_rc",
+			localField: "gestori",
+			foreignField: "Cod_good",
+			as: "sku"
+		}
+	},
+	{
+		$project: {
+			url: 1,
+			Navi: 1,
+			Brand: 1,
+			articul: 1,
+			Barcod: '$sku.Barcod',
+			Name: '$sku.Name'
+		}
+	},
+	{
+		$out: "gest_rc_1"
+	}
+])
+
+db['ILDE_products_final'].aggregate([
+    {
+        $match: {
+        	gestori: {
+            	$gt: ""
+        	}
+        }
+    },
+    {
+        $match: {
+        	gestori: {
+            	$ne: ""
+        	}
+        }
+    },
+	{
+		$lookup: {
+			from: "gestori_up",
+			localField: "gestori",
+			foreignField: "Cod_good",
+			as: "sku"
+		}
+	},
+	{
+		$project: {
+			url: 1,
+			Navi: 1,
+			Brand: 1,
+			articul: 1,
+			Barcod: '$sku.Barcod',
+			Name: '$sku.Name'
+		}
+	},
+	{
+		$out: "gest_exp"
+	}
+])
+
+mongoexport --host localhost --username apidev --password "apidev" --collection gestori_export --db parser --out /home/administrator/exp.csv --type csv --fields url, articul, sku.Barcod
+
+
+```

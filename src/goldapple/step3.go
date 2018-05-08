@@ -128,8 +128,10 @@ func Step3(glob_session *mgo.Session) {
             f8(node, pr)    // old price
             f9(node, pr)    // new price
             f10(node, pr)   // new price double check
+            fmt.Println("PRICE", pr.Price)
 
-            if pr.Price != "default" {
+            //if pr.Price != "default" {
+
                 if LetuDB == "" {
                     LetuDB = "parser"
                 }
@@ -159,7 +161,6 @@ func Step3(glob_session *mgo.Session) {
                 }
 
                 fmt.Println(strings.Join(pr.Navi, ";"))
-
                 if num < 1 {
                     fmt.Println("New:", pr.Articul)
 
@@ -220,10 +221,12 @@ func Step3(glob_session *mgo.Session) {
                                 "discountprice": pr.Price_discount,
                                 "name": pr.Name,
                                 "oldprice": pr.Oldprice,
+                                "brand": br.Name,
                                 // as of fixed 24.10.17
                                 "desc": pr.Desc,
                                 "volume": pr.Volume,
                                 "img": pr.Img,
+                                "gestori": pr.Gestori,
                                 "url": pr.Url,
                                 "Navi": strings.Join(pr.Navi, ";"),
                                 "LastUpdate": MakeTimePrefix(""),
@@ -240,7 +243,7 @@ func Step3(glob_session *mgo.Session) {
                         fmt.Println("Step3 insert on double price error", err)
                     }
                 }
-            }
+            //}
         }
         for c := node.FirstChild; c != nil; c = c.NextSibling {
             f1(c, pr, br)
