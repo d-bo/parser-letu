@@ -112,6 +112,7 @@ func mongoInsertBrand(b *Brand, glob_session *mgo.Session) bool {
     if num < 1 {
         c_all.Insert(allb)
     } else {
+        // double
     }
     if err != nil {
         syslog.Critf("Step1 insert brand error: %s", err)

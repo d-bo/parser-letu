@@ -538,7 +538,7 @@ func Step3(glob_session *mgo.Session) {
         }
         url_final := LetuRootUrl + v.Link
         fmt.Println("URL:", url_final)
-        pr = &Product{Price: "default", Url: url_final}
+        pr = &Product{Price: "", Url: url_final}
         resp, err := httpClient.Get(url_final)
         if err != nil {
             syslog.Critf("Step3 httpClient error: %s", err)
