@@ -11,7 +11,7 @@ import (
 
 const (
     C_HOST = "0.0.0.0"
-    C_PORT = "8800"
+    C_PORT = "8804"
     C_TYPE = "tcp"
 )
 
@@ -25,47 +25,8 @@ func main() {
     r := gin.Default()
 
     // Start parser
-    r.GET("/v1/start", func(c *gin.Context) {
-
-        // Mongo connection
-        session, glob_err := mgo.Dial("mongodb://apidev:apidev@localhost:27017/parser")
-
-        if glob_err != nil {
-            syslog.Critf("Error: %s", glob_err)
-        }
-
-        syslog.Openlog("letu_parser", syslog.LOG_PID, syslog.LOG_USER)
-        syslog.Syslog(syslog.LOG_INFO, "Start LETU parser ... ")
-
-        coll := goldapple.MakeTimePrefix(BrandCollection)
-        if DB == "" {
-            DB = "parser"
-        }
-        collections := session.DB(DB).C(coll)
-        session.SetMode(mgo.Monotonic, true)
-        num, err := collections.Count()
-
-        if err != nil {
-            syslog.Critf("Error: %s", err)
-        }
-
-        if num > 1 {
-            syslog.Err("LETU brands allready parsed today")
-            fmt.Println("LETU brands allready parsed today")
-            c.JSON(200, gin.H{
-                "message": "LETU brands allready parsed today",
-            })
-        } else {
-            c.JSON(200, gin.H{
-                "message": "r.GET(\"/start\", func(c *gin.Context)",
-            })
-            goldapple.Step1(session)
-            goldapple.Step2(session)
-            goldapple.Step3(session)
-            goldapple.Chanel(session)
-        }
-
-        session.Close()
+    r.GET("/v1/check/:user", func(c *gin.Context) {
+        name := c.Param("name")
     })
 
     // Parse single product page
@@ -84,7 +45,7 @@ func main() {
 
     // Parse single product page
     r.GET("/", func(c *gin.Context) {
-        c.String(200, "GA")
+        c.String(200, "GASec")
     })
 
     r.Run(":"+C_PORT)
